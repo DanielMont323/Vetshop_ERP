@@ -73,6 +73,28 @@ Decisiones del Paso 3:
 - Costos visibles solo para quien tiene `inventario:entradas` (almacén y dueño).
 - Reversión: devuelve a las capas exactas; el índice único de `movimientoOriginal` impide revertir dos veces.
 
+Paso 4 (recepción de mercancía):
+
+| Colección | Campos clave | Índices |
+|---|---|---|
+| `Proveedor` | nombre, rfc?, contacto, telefono, email, diasCredito, activo | `nombre` único (sin mayúsculas ni acentos), `rfc` único (si existe) |
+| `Compra` | sucursal, proveedor, proveedorNombre, folioFactura, fechaFactura, condicionPago, diasCredito, vencimiento?, partidas[{producto, sku, nombre, unidad, tasaIva, cantidad, costoUnitario, importe, iva, lote?, caducidad?, temperaturaLlegada?, fueraDeRango, capa?}], subtotal, iva, total, estado, vigente, observaciones, usuario, recibidoPor, fechaRecepcion | `{sucursal, estado, fechaFactura}`, `{sucursal, proveedor, fechaFactura}`, `{proveedor, folioFactura}` único si `vigente` |
+
+Decisiones del Paso 4:
+- Flujo: **borrador** (editable con PUT) → **recibida** (al confirmar; ya no cambia) | **cancelada** (solo desde borrador).
+- **Costo de compra sin IVA** (como viene en la factura). El IVA se calcula por partida con la tasa del producto
+  (half-up) y se guarda la tasa en la partida. Las capas guardan el costo sin IVA.
+- Confirmar es atómico: el cambio de estado borrador → recibida va en el filtro de la actualización, así que dos
+  confirmaciones simultáneas no crean capas dos veces; si una partida falla no se crea ninguna capa.
+- La regla de lote y caducidad por categoría se valida al guardar el borrador y de nuevo al confirmar.
+- **Cadena de frío:** la temperatura de llegada es opcional; si el producto requiere refrigeración y llegó fuera de
+  2–8 °C, la partida queda marcada `fueraDeRango` (no se bloquea la recepción).
+- **Vencimiento** (solo a crédito) = fecha de factura + días de crédito (los del proveedor salvo que se indiquen),
+  fin del día en Tepic. Se usará en las cuentas por pagar de la Fase 2.
+- La misma factura (proveedor + folio) no se registra dos veces en ninguna sucursal mientras esté vigente; cancelar
+  un borrador libera el folio.
+- Proveedores y recepciones: permiso `recepcion:registrar` (almacén y dueño).
+
 Pasos siguientes (diseño acordado): ver la tabla del plan. Ajustes ya decididos:
 - `Venta.partidas[]` guarda copia de precio unitario, lista de precios, tasa de IVA y descuento.
 - `Receta.partidas[]`: producto, cantidad prescrita, cantidad entregada, lote.

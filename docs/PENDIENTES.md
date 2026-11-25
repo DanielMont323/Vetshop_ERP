@@ -17,6 +17,15 @@ Cosas detectadas y aceptadas por ahora, para resolver más adelante. Cada una in
   3. Añadir un límite por IP en la BD (colección con TTL) que se aplique igual a todos los nombres.
 - **Decidir antes de:** salir a producción en todas las sucursales (enero).
 
+## Compras
+
+### Devolución o cancelación de una compra ya recibida
+- **Qué pasa:** una compra recibida no se puede cancelar. Si se capturó mal, hoy hay que corregir con ajustes de
+  inventario (con PIN del dueño).
+- **Opciones:** permitir cancelarla con autorización del dueño solo si sus capas no se han tocado (revertir entradas),
+  o registrar una "devolución a proveedor" como salida dirigida a esas capas.
+- **Decidir antes de:** el arranque en enero.
+
 ## Resueltos
 
 - **Cambiar la unidad de un producto con existencias** (Paso 3): `productos.actualizar()` responde 409
