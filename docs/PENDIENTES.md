@@ -17,10 +17,7 @@ Cosas detectadas y aceptadas por ahora, para resolver más adelante. Cada una in
   3. Añadir un límite por IP en la BD (colección con TTL) que se aplique igual a todos los nombres.
 - **Decidir antes de:** salir a producción en todas las sucursales (enero).
 
-## Catálogo
+## Resueltos
 
-### Cambiar la unidad de un producto con existencias
-- **Dónde:** `backend/services/productos.js` → `actualizar()`.
-- **Qué pasa:** hoy se puede cambiar `unidad` de `pieza` a `kg` (o al revés) libremente. Cuando haya capas de
-  inventario (Paso 3), sus cantidades quedarían en la unidad equivocada (piezas leídas como gramos).
-- **Qué hacer en el Paso 3:** rechazar el cambio de unidad si el producto tiene capas o movimientos (409).
+- **Cambiar la unidad de un producto con existencias** (Paso 3): `productos.actualizar()` responde 409
+  `UNIDAD_CON_INVENTARIO` si el producto tiene capas en cualquier sucursal.
