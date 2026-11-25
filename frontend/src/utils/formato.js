@@ -113,3 +113,10 @@ export const NOMBRES_ESTADO_COMPRA = {
   recibida: { texto: 'Recibida', clase: 'bg-emerald-100 text-emerald-800' },
   cancelada: { texto: 'Cancelada', clase: 'bg-red-100 text-red-800' }
 };
+
+export const NOMBRES_ESTADO_RECETA = {
+  pendiente: { texto: 'Pendiente de validar', clase: 'bg-amber-100 text-amber-800' },
+  validada: { texto: 'Validada', clase: 'bg-emerald-100 text-emerald-800' },
+  surtida: { texto: 'Surtida', clase: 'bg-slate-200 text-slate-700' },
+  cancelada: { texto: 'Cancelada', clase: 'bg-red-100 text-red-800' }
+};

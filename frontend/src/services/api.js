@@ -51,7 +51,8 @@ const originales = {
 const sinDuplicados = metodo => (url, ...args) => {
   const datos = metodo === 'delete' ? undefined : args[0];
   const config = (metodo === 'delete' ? args[0] : args[1]) || {};
-  if (typeof FormData !== 'undefined' && datos instanceof FormData) return originales[metodo](url, ...args);
+  // Archivos: no se comparan (JSON.stringify de un archivo es {} y dos archivos distintos parecerían iguales)
+  if ((typeof FormData !== 'undefined' && datos instanceof FormData) || (typeof Blob !== 'undefined' && datos instanceof Blob)) return originales[metodo](url, ...args);
   let clave;
   try {
     clave = `${metodo} ${url} ${JSON.stringify(datos ?? null)} ${JSON.stringify(config.params ?? null)}`;
@@ -153,4 +154,17 @@ export const ventasAPI = {
   listarEspera: () => api.get('/ventas/espera'),
   guardarEspera: datos => api.post('/ventas/espera', datos),
   eliminarEspera: id => api.delete(`/ventas/espera/${id}`)
+};
+
+export const recetasAPI = {
+  listar: params => api.get('/recetas', { params }),
+  disponibles: producto => api.get('/recetas/disponibles', { params: { producto } }),
+  obtener: id => api.get(`/recetas/${id}`),
+  crear: datos => api.post('/recetas', datos),
+  actualizar: (id, datos) => api.put(`/recetas/${id}`, datos),
+  validar: (id, autorizacion) => api.post(`/recetas/${id}/validar`, { autorizacion }),
+  cancelar: (id, motivo) => api.post(`/recetas/${id}/cancelar`, { motivo }),
+  subirArchivo: (id, archivo) =>
+    api.put(`/recetas/${id}/archivo`, archivo, { headers: { 'Content-Type': archivo.type, 'X-Nombre-Archivo': encodeURIComponent(archivo.name) } }),
+  archivo: id => api.get(`/recetas/${id}/archivo`, { responseType: 'blob' })
 };
