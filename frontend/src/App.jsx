@@ -9,6 +9,8 @@ import ListasPrecios from './pages/ListasPrecios';
 import Existencias from './pages/Existencias';
 import Compras from './pages/Compras';
 import Proveedores from './pages/Proveedores';
+import Caja from './pages/Caja';
+import VentasDia from './pages/VentasDia';
 
 function Inicio() {
   const { usuario, sucursalActiva } = useAuth();
@@ -35,6 +37,8 @@ export default function App() {
             <Route path="/existencias" element={<Existencias />} />
             <Route path="/compras" element={<Compras />} />
             <Route path="/proveedores" element={<Proveedores />} />
+            <Route path="/caja" element={<Caja />} />
+            <Route path="/ventas" element={<VentasDia />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

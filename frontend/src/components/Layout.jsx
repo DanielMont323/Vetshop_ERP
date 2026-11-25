@@ -1,5 +1,5 @@
 import { Link, NavLink, Navigate, Outlet } from 'react-router-dom';
-import { Boxes, KeyRound, LogOut, Package, PawPrint, Store, Tags, Truck, Users } from 'lucide-react';
+import { Boxes, KeyRound, LogOut, Package, PawPrint, ReceiptText, ShoppingCart, Store, Tags, Truck, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const NOMBRES_ROL = {
@@ -27,6 +27,8 @@ export default function Layout() {
           {puede('catalogo:ver') && (
             <nav className="flex items-center gap-1 text-sm">
               {[
+                puede('ventas:cobrar') && ['/caja', 'Caja', ShoppingCart],
+                (puede('ventas:ver_todas') || puede('ventas:ver_propias_del_dia')) && ['/ventas', 'Ventas', ReceiptText],
                 puede('existencias:ver') && ['/existencias', 'Existencias', Boxes],
                 puede('recepcion:registrar') && ['/compras', 'Recepción', Truck],
                 puede('recepcion:registrar') && ['/proveedores', 'Proveedores', Users],

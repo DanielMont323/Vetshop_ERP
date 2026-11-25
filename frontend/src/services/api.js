@@ -137,3 +137,20 @@ export const comprasAPI = {
   confirmar: id => api.post(`/compras/${id}/confirmar`),
   cancelar: (id, motivo) => api.post(`/compras/${id}/cancelar`, { motivo })
 };
+
+export const clientesAPI = {
+  listar: params => api.get('/clientes', { params }),
+  crear: datos => api.post('/clientes', datos),
+  actualizar: (id, datos) => api.patch(`/clientes/${id}`, datos)
+};
+
+export const ventasAPI = {
+  cobrar: datos => api.post('/ventas', datos),
+  listar: params => api.get('/ventas', { params }),
+  obtener: id => api.get(`/ventas/${id}`),
+  cancelar: (id, datos) => api.post(`/ventas/${id}/cancelar`, datos),
+  ticket: (id, ancho = 80) => api.get(`/ventas/${id}/ticket`, { params: { ancho }, responseType: 'text' }),
+  listarEspera: () => api.get('/ventas/espera'),
+  guardarEspera: datos => api.post('/ventas/espera', datos),
+  eliminarEspera: id => api.delete(`/ventas/espera/${id}`)
+};
