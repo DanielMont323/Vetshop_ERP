@@ -3,7 +3,8 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
-import CambiarPassword from './pages/CambiarPassword';
+import CambiarPassword, { MiPin } from './pages/CambiarPassword';
+import Administracion from './pages/Administracion';
 import Productos from './pages/Productos';
 import ListasPrecios from './pages/ListasPrecios';
 import Existencias from './pages/Existencias';
@@ -37,7 +38,8 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route element={<Layout />}>
             <Route path="/" element={<Inicio />} />
-            <Route path="/cambiar-password" element={<CambiarPassword />} />
+            <Route path="/cambiar-password" element={<><CambiarPassword /><MiPin /></>} />
+            <Route path="/administracion" element={<Administracion />} />
             <Route path="/productos" element={<Productos />} />
             <Route path="/listas-precios" element={<ListasPrecios />} />
             <Route path="/existencias" element={<Existencias />} />
