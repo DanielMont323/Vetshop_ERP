@@ -1,5 +1,5 @@
 import { Link, NavLink, Navigate, Outlet } from 'react-router-dom';
-import { ArrowLeftRight, Boxes, Calculator, FileText, KeyRound, LogOut, Package, PawPrint, ReceiptText, ShoppingCart, Store, Tags, Truck, Users } from 'lucide-react';
+import { ArrowLeftRight, BarChart3, Boxes, Calculator, FileText, KeyRound, LogOut, Package, PawPrint, ReceiptText, ShoppingCart, Store, Tags, Truck, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const NOMBRES_ROL = {
@@ -27,6 +27,7 @@ export default function Layout() {
           {puede('catalogo:ver') && (
             <nav className="flex items-center gap-1 text-sm">
               {[
+                puede('reportes:ver') && ['/reportes', 'Reportes', BarChart3],
                 puede('ventas:cobrar') && ['/caja', 'Caja', ShoppingCart],
                 puede('corte:capturar_conteo') && ['/corte', 'Turno y corte', Calculator],
                 (puede('ventas:ver_todas') || puede('ventas:ver_propias_del_dia')) && ['/ventas', 'Ventas', ReceiptText],

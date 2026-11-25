@@ -183,6 +183,21 @@ Decisiones del Paso 8:
 - **Cancelar** solo en tránsito y desde el origen; la mercancía regresa a los lotes exactos.
 - Permiso `traspasos:gestionar` (almacén y dueño). El alcance usa origen **y** destino.
 
+Paso 9 (dashboard y reportes) — no agrega colecciones; agrega sobre `Venta`, `InventoryLayer`, `Turno`, `Receta` y `Traspaso`:
+- Solo cuentan las ventas **cobradas**. **Base** = total − IVA; **margen** = base − costo (costo de los lotes que
+  salieron); margen % sobre la base.
+- Días, semanas (ISO), meses y años **en hora de Tepic** (`$dateToString` con `timezone: America/Mazatlan`); una venta
+  de las 22:00 cuenta para ese día, no para el siguiente. Por día se rellenan los días sin ventas.
+- **Forma de pago:** lo cobrado por método; el efectivo ya sin el cambio entregado.
+- **Público vs distribución** por tipo de cliente: distribución = clínica, veterinaria, petshop, estética; público =
+  el resto (incluye "Público en general" y empleados).
+- **Dashboard** de la sucursal activa (o todas, sin X-Sucursal): hoy, últimos 7 días y alertas (caducados, por
+  caducar, bajo mínimo, cortes por autorizar, cortes con diferencia en 7 días, recetas por validar, traspasos por
+  recibir).
+- **Excel** (exceljs) para el contador: resumen, agrupaciones y el detalle de cada venta; importes en pesos con
+  formato de moneda; fechas en hora de Tepic.
+- Permiso `reportes:ver` (dueño). Rango máximo de 3 años por consulta.
+
 Pasos siguientes (diseño acordado): ver la tabla del plan. Ajustes ya decididos:
 - `Venta.partidas[]` guarda copia de precio unitario, lista de precios, tasa de IVA y descuento.
 - `Receta.partidas[]`: producto, cantidad prescrita, cantidad entregada, lote.
