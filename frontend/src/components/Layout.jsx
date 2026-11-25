@@ -1,5 +1,5 @@
-import { Link, Navigate, Outlet } from 'react-router-dom';
-import { KeyRound, LogOut, PawPrint, Store } from 'lucide-react';
+import { Link, NavLink, Navigate, Outlet } from 'react-router-dom';
+import { KeyRound, LogOut, Package, PawPrint, Store, Tags } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const NOMBRES_ROL = {
@@ -11,7 +11,7 @@ const NOMBRES_ROL = {
 
 // Marco de las pantallas con sesión: encabezado con usuario, selector de sucursal y salir.
 export default function Layout() {
-  const { usuario, cargando, sucursalActiva, elegirSucursal, cerrarSesion } = useAuth();
+  const { usuario, cargando, sucursalActiva, elegirSucursal, cerrarSesion, puede } = useAuth();
 
   if (cargando) return <p className="p-6 text-slate-500">Cargando…</p>;
   if (!usuario) return <Navigate to="/login" replace />;
@@ -23,6 +23,23 @@ export default function Layout() {
           <Link to="/" className="flex items-center gap-2 text-emerald-700 font-semibold">
             <PawPrint size={20} aria-hidden="true" /> Huellitas Vetshop
           </Link>
+
+          {puede('catalogo:ver') && (
+            <nav className="flex items-center gap-1 text-sm">
+              {[
+                ['/productos', 'Productos', Package],
+                ['/listas-precios', 'Precios', Tags]
+              ].map(([ruta, texto, Icono]) => (
+                <NavLink
+                  key={ruta}
+                  to={ruta}
+                  className={({ isActive }) => `flex items-center gap-1 rounded-lg px-2 py-1 ${isActive ? 'bg-emerald-100 text-emerald-800' : 'text-slate-600 hover:bg-slate-100'}`}
+                >
+                  <Icono size={16} aria-hidden="true" /> {texto}
+                </NavLink>
+              ))}
+            </nav>
+          )}
 
           <label className="flex items-center gap-2 text-sm">
             <Store size={16} aria-hidden="true" />

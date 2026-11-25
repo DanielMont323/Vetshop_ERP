@@ -28,6 +28,25 @@ Ya implementadas (Paso 1): `Sucursal`, `Usuario`, `Auditoria`.
 | `Usuario` | nombre, usuario, passwordHash, rol, sucursales[], pinHash, activo, intentosFallidos, bloqueadoHasta, intentosPinFallidos, pinBloqueadoHasta, versionToken | `usuario` único |
 | `Auditoria` | usuario, autorizadoPor, accion, entidad, entidadId, sucursal?, antes, despues, motivo, fecha | `{entidad, entidadId, fecha}`, `{sucursal, fecha}`, `{accion, fecha}` |
 
+Paso 2 (catálogo):
+
+| Colección | Campos clave | Índices |
+|---|---|---|
+| `Producto` | sku (mayúsculas), codigoBarras?, nombre, nombreBusqueda (sin acentos), categoria, unidad, presentacion, requiereReceta, esControlado, requiereRefrigeracion, iva, activo, minimos[{sucursal, cantidad}] | `sku` único, `codigoBarras` único (solo si existe), `nombreBusqueda`, `{categoria, activo}` |
+| `ListaPrecios` | clave (`publico`, `mayoreo`, `clinica`, `empleado`), nombre, precios[{producto, precio}] | `clave` única, `precios.producto` |
+
+Decisiones del Paso 2:
+- **Precios finales con IVA incluido** (lo que paga el cliente). El desglose de IVA se calcula al facturar.
+- `iva`: `tasa_16`, `tasa_0` o `exento` (CFDI distingue tasa 0 de exento).
+- `categoria`: `medicamento`, `biologico`, `alimento`, `accesorio`, `higiene`, `otro`.
+- `esControlado` implica `requiereReceta`.
+- Si un producto no tiene precio en la lista del cliente se cobra el de **público** (`resolverPrecio` devuelve la
+  lista aplicada para copiarla en la partida). Sin precio de público no se puede vender.
+- Los productos no se borran: se desactivan.
+- Búsqueda: código de barras o SKU exactos, o cada palabra contenida en el nombre sin acentos (regex escapado).
+  Se eligió esto en lugar de un índice de texto porque el índice de texto no encuentra palabras parciales («croq»).
+- Cada alta, cambio de producto y cambio de precio queda en la bitácora con antes y después.
+
 Pasos siguientes (diseño acordado): ver la tabla del plan. Ajustes ya decididos:
 - `Venta.partidas[]` guarda copia de precio unitario, lista de precios, tasa de IVA y descuento.
 - `Receta.partidas[]`: producto, cantidad prescrita, cantidad entregada, lote.

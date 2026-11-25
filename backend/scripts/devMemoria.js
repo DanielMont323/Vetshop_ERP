@@ -37,6 +37,23 @@ async function main() {
     await u.save();
   }
 
+  // Catálogo de prueba (datos inventados; precios finales con IVA en centavos)
+  const Producto = require('../models/Producto');
+  const ListaPrecios = require('../models/ListaPrecios');
+  const catalogo = [
+    { sku: 'CRQ-AD-20', codigoBarras: '7500000000011', nombre: 'Croquetas Perro Adulto (prueba)', categoria: 'alimento', unidad: 'pieza', presentacion: 'Costal 20 kg', iva: 'tasa_0', precios: { publico: 129900, mayoreo: 115000, clinica: 112000 } },
+    { sku: 'GRA-GATO', nombre: 'Croqueta Gato a granel (prueba)', categoria: 'alimento', unidad: 'kg', iva: 'tasa_0', precios: { publico: 8990, mayoreo: 7900 } },
+    { sku: 'VAC-RAB', codigoBarras: '7500000000028', nombre: 'Vacuna Antirrábica (prueba)', categoria: 'biologico', unidad: 'pieza', iva: 'tasa_0', requiereRefrigeracion: true, precios: { publico: 25000, clinica: 18000 } },
+    { sku: 'ANTB-100', codigoBarras: '7500000000035', nombre: 'Antibiótico Oral 100 ml (prueba)', categoria: 'medicamento', unidad: 'pieza', iva: 'tasa_0', requiereReceta: true, precios: { publico: 34900 } },
+    { sku: 'COLLAR-M', codigoBarras: '7500000000042', nombre: 'Collar Nylon Mediano (prueba)', categoria: 'accesorio', unidad: 'pieza', iva: 'tasa_16', precios: { publico: 14900, empleado: 11000 } }
+  ];
+  const listas = Object.fromEntries(ListaPrecios.LISTAS.map(l => [l.clave, { ...l, precios: [] }]));
+  for (const { precios, ...datos } of catalogo) {
+    const p = await Producto.create({ ...datos, minimos: [{ sucursal: centro._id, cantidad: datos.unidad === 'kg' ? 10000 : 3 }] });
+    for (const [clave, precio] of Object.entries(precios)) listas[clave].precios.push({ producto: p._id, precio });
+  }
+  await ListaPrecios.create(Object.values(listas));
+
   const PORT = process.env.PORT || 5000;
   crearApp().listen(PORT, () => {
     console.log(`API (Mongo en memoria) en http://localhost:${PORT}/api`);
