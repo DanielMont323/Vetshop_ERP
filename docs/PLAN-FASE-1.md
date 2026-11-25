@@ -31,6 +31,9 @@ Trabaja en este orden. Al terminar cada paso: pruebas verdes, resumen de cambios
 - Servicio de consumo FEFO (por caducidad) con transacción; nunca consumir lotes caducados; reversión para cancelaciones.
 - Consulta de existencias por sucursal / producto / lote con estado: vigente, por caducar (≤30 días), caducado, bajo mínimo.
 - Ajustes de inventario solo con autorización del dueño.
+- Cantidades en unidad base entera: piezas para `pieza`, **gramos** para `kg` (ver `docs/MODELO-DATOS.md`).
+- Caducidad: se acepta `MM/AAAA` y se guarda como el último día de ese mes, fin del día en `America/Mazatlan`, en UTC (`parsearCaducidad` en `helpers/fechas.js`). También `DD/MM/AAAA` y `AAAA-MM-DD`.
+- Sin existencia suficiente la operación se bloquea con un mensaje claro. **No hay existencias negativas en Fase 1.**
 
 ## Paso 4 — Recepción de mercancía
 - `Proveedor` y `Compra` (proveedor, folioFactura, fecha, sucursal que recibe, condición de pago, partidas con lote, caducidad, costo, temperatura de llegada opcional).
@@ -39,6 +42,9 @@ Trabaja en este orden. Al terminar cada paso: pruebas verdes, resumen de cambios
 ## Paso 5 — Punto de venta
 - `Cliente` (público en general por defecto; tipo; lista de precios).
 - `Venta`: folio por sucursal, sucursal, caja, turno, cajero, cliente, partidas (producto, cantidad, precio, descuento, lotes consumidos con costo), pagos[] (método, monto), totales en centavos, estado (cobrada | cancelada).
+- Cada partida guarda una **copia** de: precio unitario, lista de precios aplicada, tasa de IVA y descuento (si después cambia el catálogo, la venta no cambia).
+- Importe de partida a granel = precio por kg × gramos / 1000, redondeado al centavo por partida (half-up): `importeGranel` en `helpers/dinero.js`.
+- Sin existencia suficiente la venta se bloquea con mensaje claro (qué producto, cuánto hay, cuánto se pidió).
 - Precio según lista del cliente. Descuento fuera de promoción requiere PIN del dueño.
 - Productos con `requiereReceta`: no se puede cobrar sin `Receta` validada (ver Paso 6).
 - Pagos mixtos; cambio calculado en efectivo.
@@ -48,8 +54,8 @@ Trabaja en este orden. Al terminar cada paso: pruebas verdes, resumen de cambios
 - Pantalla de caja optimizada para teclado y lector de código de barras (atajos F2 buscar, F12 cobrar).
 
 ## Paso 6 — Recetas
-- `Receta`: folio, fecha, médico que prescribe, cédula, propietario, paciente (nombre, especie), producto, cantidad prescrita, cantidad entregada, archivo (foto/escaneo), validadaPor (médico responsable), venta, lote entregado.
-- Validación con PIN del médico responsable. Cantidad entregada ≤ prescrita.
+- `Receta`: folio, fecha, médico que prescribe, cédula, propietario, paciente (nombre, especie), **partidas[]** (producto, cantidad prescrita, cantidad entregada, lote entregado), archivo (foto/escaneo), validadaPor (médico responsable), venta. Una receta puede incluir varios medicamentos.
+- Validación con PIN del médico responsable. Cantidad entregada ≤ prescrita, por partida.
 - Historial filtrable de recetas surtidas.
 - Archivos: guardar en almacenamiento externo (Vercel Blob o Cloudinary), no en Mongo.
 
@@ -76,3 +82,5 @@ Trabaja en este orden. Al terminar cada paso: pruebas verdes, resumen de cambios
 
 ## Fase 2 (enero, no empezar todavía)
 Clientes y crédito (estado de cuenta, bonificación por pronto pago a 8 días), cuentas por pagar, facturación CFDI 4.0 con PAC (factura global y autofactura), conteo físico semanal, compras sugeridas, bitácora de cadena de frío, metas de vendedores, modo sin conexión de la caja.
+
+**Nota para el modo sin conexión:** en Fase 1 el folio de venta es por sucursal (`Contador` con `{sucursal, serie}`), asignado por el servidor dentro de la transacción. Con cajas que venden sin conexión, el servidor ya no puede dar el siguiente folio en el momento: **los folios tendrán que ser por caja** (serie propia de cada caja, p. ej. `CEN-1-000123`) para que dos cajas desconectadas nunca generen el mismo folio. Diseñar `Venta.folio` y `Contador` para que agregar la caja a la serie no exija migrar ventas ya emitidas.
