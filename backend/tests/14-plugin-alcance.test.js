@@ -140,6 +140,91 @@ describe('Traspaso: origen / destino', () => {
   });
 });
 
+describe('actualizaciones no mudan documentos de sucursal', () => {
+  test('$set, campo directo, $unset o $rename sobre sucursal → error', async () => {
+    await rechaza(LotePrueba.updateOne({ sucursal: A }, { $set: { sucursal: B } }).exec());
+    await rechaza(LotePrueba.updateMany({ sucursal: A }, { sucursal: B }).exec());
+    await rechaza(LotePrueba.findOneAndUpdate({ sucursal: A }, { $unset: { sucursal: 1 } }).exec());
+    await rechaza(LotePrueba.updateOne({ sucursal: A }, { $rename: { cantidad: 'sucursal' } }).exec());
+    await rechaza(TraspasoPrueba.updateOne({ origen: A }, { $set: { destino: C } }).exec());
+    expect(await LotePrueba.countDocuments({ sucursal: A })).toBe(1);
+  });
+
+  test('replace debe conservar la sucursal', async () => {
+    await rechaza(LotePrueba.replaceOne({ sucursal: A }, { cantidad: 1 }).exec());
+    const r = await LotePrueba.replaceOne({ sucursal: A }, { sucursal: A, cantidad: 6 });
+    expect(r.modifiedCount + r.matchedCount).toBeGreaterThan(0);
+  });
+});
+
+describe('insertMany', () => {
+  test('cada documento debe traer la sucursal (también con lean, que se salta la validación)', async () => {
+    const antes = await LotePrueba.countDocuments({ sucursal: { $in: [A, B] } }).setOptions({ sinAlcance: true });
+    await rechaza(LotePrueba.insertMany([{ sucursal: A, cantidad: 1 }, { cantidad: 2 }]));
+    await rechaza(LotePrueba.insertMany([{ sucursal: null, cantidad: 1 }], { lean: true }));
+    await rechaza(LotePrueba.insertMany({ cantidad: 3 }));
+    await rechaza(TraspasoPrueba.insertMany([{ origen: A, piezas: 1 }])); // falta destino
+    // no se insertó NINGUNO (ni el primero, que sí era válido)
+    expect(await LotePrueba.find({}).setOptions({ sinAlcance: true })).toHaveLength(antes);
+  });
+
+  test('documentos completos se insertan; el escape explícito existe para migraciones', async () => {
+    const creados = await LotePrueba.insertMany([{ sucursal: A, cantidad: 10 }, { sucursal: B, cantidad: 20 }]);
+    expect(creados).toHaveLength(2);
+    await TraspasoPrueba.insertMany([{ origen: A, destino: C, piezas: 1 }]);
+    await expect(LotePrueba.insertMany([{ sucursal: A, cantidad: 30 }], { sinAlcance: true })).resolves.toHaveLength(1);
+    await LotePrueba.deleteMany({ sucursal: { $in: [A, B] }, cantidad: { $in: [10, 20, 30] } });
+  });
+});
+
+describe('bulkWrite', () => {
+  const bulkRechaza = ops => expect(LotePrueba.bulkWrite(ops)).rejects.toBeInstanceOf(ErrorAlcance);
+
+  test('insertOne sin sucursal → error, y no se aplica ninguna operación del lote', async () => {
+    const antes = await LotePrueba.countDocuments({ sucursal: A });
+    await bulkRechaza([
+      { insertOne: { document: { sucursal: A, cantidad: 1 } } },
+      { insertOne: { document: { cantidad: 2 } } }
+    ]);
+    expect(await LotePrueba.countDocuments({ sucursal: A })).toBe(antes);
+  });
+
+  test('update/delete/replace sin filtro de sucursal → error', async () => {
+    await bulkRechaza([{ updateOne: { filter: { cantidad: 6 }, update: { $inc: { cantidad: 1 } } } }]);
+    await bulkRechaza([{ updateMany: { filter: {}, update: { $set: { cantidad: 0 } } } }]);
+    await bulkRechaza([{ deleteOne: { filter: { cantidad: 6 } } }]);
+    await bulkRechaza([{ deleteMany: { filter: { sucursal: { $ne: A } } } }]);
+    await bulkRechaza([{ replaceOne: { filter: {}, replacement: { sucursal: A, cantidad: 1 } } }]);
+  });
+
+  test('update que muda la sucursal o replace sin sucursal → error', async () => {
+    await bulkRechaza([{ updateOne: { filter: { sucursal: A }, update: { $set: { sucursal: B } } } }]);
+    await bulkRechaza([{ replaceOne: { filter: { sucursal: A }, replacement: { cantidad: 1 } } }]);
+  });
+
+  test('operaciones con alcance se aplican', async () => {
+    const r = await LotePrueba.bulkWrite([
+      { insertOne: { document: { sucursal: B, cantidad: 40 } } },
+      { updateOne: { filter: { sucursal: B, cantidad: 40 }, update: { $inc: { cantidad: 1 } } } },
+      { deleteMany: { filter: { sucursal: B, cantidad: 41 } } }
+    ]);
+    expect(r.insertedCount).toBe(1);
+    expect(r.modifiedCount).toBe(1);
+    expect(r.deletedCount).toBe(1);
+  });
+
+  test('Traspaso: insertOne necesita origen Y destino; filtros por cualquiera', async () => {
+    await expect(TraspasoPrueba.bulkWrite([{ insertOne: { document: { origen: A, piezas: 1 } } }])).rejects.toBeInstanceOf(ErrorAlcance);
+    const r = await TraspasoPrueba.bulkWrite([{ updateMany: { filter: { destino: C }, update: { $inc: { piezas: 0 } } } }]);
+    expect(r.matchedCount).toBeGreaterThan(0);
+  });
+
+  test('escape explícito: bulkWrite(ops, { sinAlcance: true })', async () => {
+    const r = await LotePrueba.bulkWrite([{ updateMany: { filter: {}, update: { $inc: { cantidad: 0 } } } }], { sinAlcance: true });
+    expect(r.matchedCount).toBeGreaterThan(0);
+  });
+});
+
 test('registrar el plugin en un esquema sin el campo de sucursal falla al arrancar', () => {
   const sinCampo = new mongoose.Schema({ nombre: String });
   expect(() => sinCampo.plugin(alcanceSucursal)).toThrow(/sucursal/);
