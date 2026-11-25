@@ -50,6 +50,19 @@ function normalizarCaducidad(caducidad) {
   return parsearCaducidad(caducidad);
 }
 
+// Reglas de lote y caducidad de una entrada (también las usa el borrador de compra para avisar antes).
+// Devuelve { lote, caducidad } normalizados.
+function validarLoteYCaducidad(producto, { lote: loteTexto, caducidad: caducidadTexto }, { fecha = new Date(), permitirCaducado = false } = {}) {
+  const lote = (loteTexto || '').trim() || undefined;
+  const caducidad = normalizarCaducidad(caducidadTexto);
+  if (EXIGEN_LOTE.has(producto.categoria) && !lote) throw solicitudInvalida(`${producto.nombre}: indica el lote`);
+  if (EXIGEN_CADUCIDAD.has(producto.categoria) && !caducidad) throw solicitudInvalida(`${producto.nombre}: indica la caducidad`);
+  if (caducidad && estaCaducado(caducidad, fecha) && !permitirCaducado) {
+    throw solicitudInvalida(`${producto.nombre}: el lote ${lote || ''} ya está caducado (${formatearLocal(caducidad, 'dd/MM/yyyy')})`);
+  }
+  return { lote, caducidad };
+}
+
 /**
  * Entrada de inventario: crea una capa y su movimiento.
  * @param {object} datos
@@ -66,13 +79,10 @@ async function registrarEntrada(datos, session) {
   if (!TIPO_POR_ORIGEN[origen]) throw solicitudInvalida(`Origen de entrada inválido: ${origen}`);
 
   const producto = await cargarProducto(datos.producto, session);
-  const lote = (datos.lote || '').trim() || undefined;
-  const caducidad = normalizarCaducidad(datos.caducidad);
-  if (EXIGEN_LOTE.has(producto.categoria) && !lote) throw solicitudInvalida(`${producto.nombre}: indica el lote`);
-  if (EXIGEN_CADUCIDAD.has(producto.categoria) && !caducidad) throw solicitudInvalida(`${producto.nombre}: indica la caducidad`);
-  if (caducidad && estaCaducado(caducidad, fecha) && !(datos.permitirCaducado && origen === 'inventario_inicial')) {
-    throw solicitudInvalida(`${producto.nombre}: el lote ${lote || ''} ya está caducado (${formatearLocal(caducidad, 'dd/MM/yyyy')})`);
-  }
+  const { lote, caducidad } = validarLoteYCaducidad(producto, datos, {
+    fecha,
+    permitirCaducado: Boolean(datos.permitirCaducado && origen === 'inventario_inicial')
+  });
 
   const [capa] = await InventoryLayer.create(
     [{
@@ -290,6 +300,6 @@ async function tieneInventario(productoId, session) {
 }
 
 module.exports = {
-  registrarEntrada, consumirFefo, consumirDeCapa, revertirSalidas, tieneInventario,
+  registrarEntrada, consumirFefo, consumirDeCapa, revertirSalidas, tieneInventario, validarLoteYCaducidad,
   EXIGEN_LOTE, EXIGEN_CADUCIDAD
 };

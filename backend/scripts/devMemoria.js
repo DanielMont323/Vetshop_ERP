@@ -77,6 +77,12 @@ async function main() {
     await inv.registrarEntrada({ sucursal: norte._id, producto: productos['COLLAR-M']._id, cantidad: 10, costoUnitario: 7000, origen: 'inventario_inicial', usuario: dueno._id }, session);
   });
 
+  const Proveedor = require('../models/Proveedor');
+  await Proveedor.create([
+    { nombre: 'Distribuidora Veterinaria (prueba)', diasCredito: 30, contacto: 'Ventas', telefono: '3110000000' },
+    { nombre: 'Alimentos Mascota (prueba)', diasCredito: 0 }
+  ]);
+
   const PORT = process.env.PORT || 5000;
   crearApp().listen(PORT, () => {
     console.log(`API (Mongo en memoria) en http://localhost:${PORT}/api`);
