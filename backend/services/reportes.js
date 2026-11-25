@@ -45,7 +45,7 @@ function rango({ desde, hasta } = {}) {
 const matchVentas = (alcance, { inicio, fin }) => matchAlcance(alcance, { estado: 'cobrada', fecha: { $gte: inicio, $lt: fin } });
 
 async function totales(alcance, r) {
-  const [f] = await Venta.aggregate([matchVentas(alcance, r), { $group: { _id: null, ...sumas } }]);
+  const [f] = await Venta.aggregate([matchVentas(alcance, r), { $group: { _id: null, ...sumas } }, { $unset: '_id' }]);
   return f ? conMargen(f) : vacio();
 }
 
