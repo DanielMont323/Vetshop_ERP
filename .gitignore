@@ -1,0 +1,23 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Builds
+frontend/dist/
+build/
+
+# Respaldos y logs
+backend/respaldos/
+*.log
+npm-debug.log*
+
+# Sistema / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.vercel
