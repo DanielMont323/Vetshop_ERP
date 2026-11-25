@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "node --watch server.js",
     "start": "node server.js",
+    "dev:memoria": "node scripts/devMemoria.js",
     "test": "jest",
     "crear-dueno": "node scripts/crearDueno.js"
   },

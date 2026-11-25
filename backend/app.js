@@ -4,6 +4,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const { conectar } = require('./config/database');
 const { rutaNoEncontrada, manejarErrores } = require('./middleware/errores');
+const { autenticar } = require('./middleware/auth');
+const { scopeSucursal } = require('./middleware/scopeSucursal');
 
 // CORS: solo los orígenes de CORS_ORIGINS (separados por comas) pueden llamar desde un navegador.
 // Las peticiones sin Origin (curl, scripts, pruebas) no pasan por CORS: las protege el token.
@@ -20,7 +22,12 @@ function opcionesCors() {
   };
 }
 
-function crearApp() {
+// Rutas OPERATIVAS (datos por sucursal): se montan con autenticar + scopeSucursal.
+// Se irán agregando en los pasos siguientes (existencias, ventas, cortes, traspasos…).
+const RUTAS_OPERATIVAS = [];
+
+// opciones.rutasOperativas: rutas extra montadas igual que las operativas (las usan las pruebas)
+function crearApp({ rutasOperativas = [] } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1); // Vercel pone la IP real en X-Forwarded-For
@@ -28,6 +35,11 @@ function crearApp() {
   app.use(helmet());
   app.use(cors(opcionesCors()));
   app.use(express.json({ limit: '1mb' }));
+  // Datos de negocio: que ni el navegador ni un proxy guarden copias
+  app.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    next();
+  });
 
   app.get('/api/salud', (req, res) => {
     res.json({ ok: true, estado: 'OK', fecha: new Date().toISOString() });
@@ -42,6 +54,16 @@ function crearApp() {
       next(error);
     }
   });
+
+  // Rutas globales (sin alcance de sucursal)
+  app.use('/api/auth', require('./routes/auth'));
+  app.use('/api/usuarios', autenticar, require('./routes/usuarios'));
+  app.use('/api/sucursales', autenticar, require('./routes/sucursales'));
+
+  // Rutas operativas: siempre autenticar → scopeSucursal → router
+  for (const [ruta, router] of [...RUTAS_OPERATIVAS, ...rutasOperativas]) {
+    app.use(ruta, autenticar, scopeSucursal, router);
+  }
 
   app.use(rutaNoEncontrada);
   app.use(manejarErrores);

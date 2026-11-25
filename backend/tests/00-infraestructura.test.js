@@ -41,6 +41,23 @@ test('CORS: permite el origen configurado y no otros', async () => {
   expect(malo.headers['access-control-allow-origin']).toBeUndefined();
 });
 
+test('CORS: la petición previa (preflight) del navegador permite los encabezados que manda el frontend', async () => {
+  // Los encabezados que pone frontend/src/services/api.js
+  const res = await h.request(h.app)
+    .options('/api/auth/login')
+    .set('Origin', 'http://localhost:5173')
+    .set('Access-Control-Request-Method', 'POST')
+    .set('Access-Control-Request-Headers', 'content-type,authorization,x-sucursal');
+  expect(res.status).toBe(204);
+  const permitidos = res.headers['access-control-allow-headers'].toLowerCase().split(',').map(s => s.trim());
+  expect(permitidos).toEqual(expect.arrayContaining(['content-type', 'authorization', 'x-sucursal']));
+});
+
+test('las respuestas de la API no se guardan en caché', async () => {
+  const res = await h.request(h.app).get('/api/no-existe');
+  expect(res.headers['cache-control']).toBe('no-store');
+});
+
 describe('transacciones (réplica)', () => {
   test('confirma si todo sale bien', async () => {
     await conTransaccion(async session => {
