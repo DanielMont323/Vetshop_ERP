@@ -1,0 +1,82 @@
+// Producto del catálogo. Global (no lleva sucursal); solo los mínimos son por sucursal.
+//
+// Unidades: 'pieza' (cantidades en piezas) o 'kg' (cantidades en GRAMOS; precio y costo por kg).
+// IVA: 'tasa_16', 'tasa_0' o 'exento'. Los precios de las listas son FINALES, con IVA incluido.
+const mongoose = require('mongoose');
+const { normalizar } = require('../helpers/texto');
+
+const CATEGORIAS = ['medicamento', 'biologico', 'alimento', 'accesorio', 'higiene', 'otro'];
+const UNIDADES = ['pieza', 'kg'];
+const TIPOS_IVA = ['tasa_16', 'tasa_0', 'exento'];
+const PUNTOS_BASE_IVA = { tasa_16: 1600, tasa_0: 0, exento: 0 };
+
+const RE_SKU = /^[A-Z0-9._-]{1,30}$/;
+const RE_CODIGO_BARRAS = /^[0-9A-Za-z-]{4,40}$/;
+
+const minimoSchema = new mongoose.Schema(
+  {
+    sucursal: { type: mongoose.Schema.Types.ObjectId, ref: 'Sucursal', required: true },
+    // En unidad base: piezas o gramos
+    cantidad: {
+      type: Number,
+      required: true,
+      min: [0, 'El mínimo no puede ser negativo'],
+      validate: { validator: Number.isSafeInteger, message: 'El mínimo debe ser un entero (piezas o gramos)' }
+    }
+  },
+  { _id: false }
+);
+
+const productoSchema = new mongoose.Schema(
+  {
+    sku: {
+      type: String,
+      required: [true, 'El SKU es obligatorio'],
+      trim: true,
+      uppercase: true,
+      match: [RE_SKU, 'El SKU solo admite letras, números, punto, guion y guion bajo (máx. 30)']
+    },
+    codigoBarras: {
+      type: String,
+      trim: true,
+      match: [RE_CODIGO_BARRAS, 'Código de barras inválido (4 a 40 letras o números)']
+    },
+    nombre: { type: String, required: [true, 'El nombre es obligatorio'], trim: true, maxlength: 120 },
+    // Copia normalizada del nombre para buscar sin acentos ni mayúsculas
+    nombreBusqueda: { type: String, select: false },
+    categoria: { type: String, enum: { values: CATEGORIAS, message: 'Categoría inválida' }, required: true },
+    unidad: { type: String, enum: { values: UNIDADES, message: 'Unidad inválida (pieza o kg)' }, required: true },
+    presentacion: { type: String, trim: true, maxlength: 80 },
+    requiereReceta: { type: Boolean, default: false },
+    esControlado: { type: Boolean, default: false },
+    requiereRefrigeracion: { type: Boolean, default: false },
+    iva: { type: String, enum: { values: TIPOS_IVA, message: 'Tipo de IVA inválido' }, required: true },
+    activo: { type: Boolean, default: true },
+    minimos: { type: [minimoSchema], default: [] }
+  },
+  { timestamps: true }
+);
+
+productoSchema.index({ sku: 1 }, { unique: true });
+productoSchema.index({ codigoBarras: 1 }, { unique: true, partialFilterExpression: { codigoBarras: { $type: 'string' } } });
+productoSchema.index({ nombreBusqueda: 1 });
+productoSchema.index({ categoria: 1, activo: 1 });
+
+productoSchema.pre('validate', function () {
+  if (this.isModified('nombre') || !this.nombreBusqueda) this.nombreBusqueda = normalizar(this.nombre);
+  if (this.codigoBarras === '') this.codigoBarras = undefined;
+  // Un medicamento controlado siempre exige receta
+  if (this.esControlado) this.requiereReceta = true;
+});
+
+productoSchema.path('minimos').validate(function (lista) {
+  const ids = (lista || []).map(m => String(m.sucursal));
+  return new Set(ids).size === ids.length;
+}, 'Sucursal repetida en los mínimos');
+
+productoSchema.methods.tasaIva = function () {
+  return PUNTOS_BASE_IVA[this.iva];
+};
+
+module.exports = mongoose.model('Producto', productoSchema, 'productos');
+Object.assign(module.exports, { CATEGORIAS, UNIDADES, TIPOS_IVA, PUNTOS_BASE_IVA, RE_SKU, RE_CODIGO_BARRAS });
