@@ -181,3 +181,13 @@ export const turnosAPI = {
 };
 
 ventasAPI.cambiarFormaPago = (id, datos) => api.post(`/ventas/${id}/forma-pago`, datos);
+
+export const traspasosAPI = {
+  destinos: () => api.get('/traspasos/destinos'),
+  listar: params => api.get('/traspasos', { params }),
+  obtener: id => api.get(`/traspasos/${id}`),
+  enviar: datos => api.post('/traspasos', datos),
+  recibir: (id, datos) => api.post(`/traspasos/${id}/recibir`, datos),
+  autorizarDiferencia: (id, datos) => api.post(`/traspasos/${id}/autorizar-diferencia`, datos),
+  cancelar: (id, motivo) => api.post(`/traspasos/${id}/cancelar`, { motivo })
+};
