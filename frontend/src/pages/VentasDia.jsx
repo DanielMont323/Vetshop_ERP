@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { mensajeDeError, ventasAPI } from '../services/api';
 import { formatearDinero, formatearFecha, hoyLocal } from '../utils/formato';
 import { imprimirTicket } from '../utils/caja';
+import CorregirFormaPago from '../components/caja/CorregirFormaPago';
 
 const METODOS = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia' };
 
@@ -16,6 +17,7 @@ export default function VentasDia() {
   const [dia, setDia] = useState(hoyLocal());
   const [ventas, setVentas] = useState([]);
   const [cancelando, setCancelando] = useState(null);
+  const [corrigiendo, setCorrigiendo] = useState(null);
 
   const cargar = useCallback(async () => {
     try {
@@ -29,6 +31,15 @@ export default function VentasDia() {
   useEffect(() => {
     cargar();
   }, [cargar, sucursalActiva]);
+
+  // La lista no trae los pagos: se piden al abrir la corrección
+  const abrirCorreccion = async id => {
+    try {
+      setCorrigiendo((await ventasAPI.obtener(id)).data.datos);
+    } catch (e) {
+      toast.error(mensajeDeError(e, 'No se pudo abrir la venta'));
+    }
+  };
 
   const cobradas = ventas.filter(v => v.estado === 'cobrada');
   const total = cobradas.reduce((s, v) => s + v.total, 0);
@@ -70,7 +81,10 @@ export default function VentasDia() {
                 <td className="px-3 py-2 flex gap-2 justify-end">
                   <button type="button" onClick={() => imprimirTicket(v.id).catch(e => toast.error(mensajeDeError(e, 'No se pudo imprimir')))} aria-label={`Reimprimir ticket ${v.folio}`} className="text-slate-500 hover:text-slate-800"><Printer size={16} /></button>
                   {v.estado === 'cobrada' && puede('ventas:cobrar') && (
-                    <button type="button" onClick={() => setCancelando(v)} className="text-xs text-red-700 underline">Cancelar</button>
+                    <>
+                      <button type="button" onClick={() => abrirCorreccion(v.id)} className="text-xs text-slate-700 underline">Forma de pago</button>
+                      <button type="button" onClick={() => setCancelando(v)} className="text-xs text-red-700 underline">Cancelar</button>
+                    </>
                   )}
                 </td>
               </tr>
@@ -80,6 +94,7 @@ export default function VentasDia() {
         </table>
       </div>
 
+      {corrigiendo && <CorregirFormaPago venta={corrigiendo} alCerrar={() => setCorrigiendo(null)} alGuardar={() => { setCorrigiendo(null); cargar(); }} />}
       {cancelando && <CancelarVenta venta={cancelando} alCerrar={() => setCancelando(null)} alCancelar={() => { setCancelando(null); cargar(); }} />}
     </section>
   );
