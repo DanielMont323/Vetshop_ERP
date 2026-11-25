@@ -16,3 +16,11 @@ Cosas detectadas y aceptadas por ahora, para resolver más adelante. Cada una in
   2. Devolver siempre 401 con el mismo mensaje y avisar del bloqueo solo por otro canal (p. ej. aviso al dueño).
   3. Añadir un límite por IP en la BD (colección con TTL) que se aplique igual a todos los nombres.
 - **Decidir antes de:** salir a producción en todas las sucursales (enero).
+
+## Catálogo
+
+### Cambiar la unidad de un producto con existencias
+- **Dónde:** `backend/services/productos.js` → `actualizar()`.
+- **Qué pasa:** hoy se puede cambiar `unidad` de `pieza` a `kg` (o al revés) libremente. Cuando haya capas de
+  inventario (Paso 3), sus cantidades quedarían en la unidad equivocada (piezas leídas como gramos).
+- **Qué hacer en el Paso 3:** rechazar el cambio de unidad si el producto tiene capas o movimientos (409).
