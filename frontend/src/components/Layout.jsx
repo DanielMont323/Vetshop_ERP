@@ -1,5 +1,5 @@
 import { Link, NavLink, Navigate, Outlet } from 'react-router-dom';
-import { KeyRound, LogOut, Package, PawPrint, Store, Tags } from 'lucide-react';
+import { Boxes, KeyRound, LogOut, Package, PawPrint, Store, Tags } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const NOMBRES_ROL = {
@@ -27,9 +27,10 @@ export default function Layout() {
           {puede('catalogo:ver') && (
             <nav className="flex items-center gap-1 text-sm">
               {[
+                puede('existencias:ver') && ['/existencias', 'Existencias', Boxes],
                 ['/productos', 'Productos', Package],
                 ['/listas-precios', 'Precios', Tags]
-              ].map(([ruta, texto, Icono]) => (
+              ].filter(Boolean).map(([ruta, texto, Icono]) => (
                 <NavLink
                   key={ruta}
                   to={ruta}

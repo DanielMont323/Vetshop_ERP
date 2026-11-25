@@ -24,7 +24,10 @@ function opcionesCors() {
 
 // Rutas OPERATIVAS (datos por sucursal): se montan con autenticar + scopeSucursal.
 // Se irán agregando en los pasos siguientes (existencias, ventas, cortes, traspasos…).
-const RUTAS_OPERATIVAS = [];
+const RUTAS_OPERATIVAS = [
+  ['/api/existencias', require('./routes/existencias')],
+  ['/api/inventario', require('./routes/inventario')]
+];
 
 // opciones.rutasOperativas: rutas extra montadas igual que las operativas (las usan las pruebas)
 function crearApp({ rutasOperativas = [] } = {}) {

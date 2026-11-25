@@ -47,6 +47,32 @@ Decisiones del Paso 2:
   Se eligió esto en lugar de un índice de texto porque el índice de texto no encuentra palabras parciales («croq»).
 - Cada alta, cambio de producto y cambio de precio queda en la bitácora con antes y después.
 
+Paso 3 (inventario por lotes):
+
+| Colección | Campos clave | Índices |
+|---|---|---|
+| `InventoryLayer` | producto, sucursal, lote?, caducidad?, ordenFefo, cantidadInicial, cantidadRestante, costoUnitario, origen, referencia {modelo, id}, fechaEntrada, agotada, usuario | `{sucursal, producto, agotada, ordenFefo, _id}` (FEFO), `{sucursal, agotada, caducidad}`, `referencia.id` |
+| `InventoryMovement` | producto, sucursal, tipo, cantidad (con signo), capas[{capa, lote, caducidad, cantidad, costoUnitario, costo}], costoTotal, referencia {modelo, id, partida}, movimientoOriginal?, motivo?, nota?, autorizadoPor?, usuario, fecha | `{sucursal, producto, fecha}`, `{sucursal, tipo, fecha}`, `referencia.id`, `movimientoOriginal` único |
+
+Decisiones del Paso 3:
+- **FEFO:** se consume primero la capa con menor `ordenFefo` (= caducidad; las capas sin caducidad, al final;
+  empate por `_id`). Nunca se consumen capas caducadas en ventas o traspasos.
+- **Caducado** = el instante actual ya pasó la caducidad (fin del día en Tepic). **Por caducar** = caduca dentro de
+  los próximos 30 días (en días de calendario de Tepic). **Existencia** = solo lo vendible (sin caducados).
+- **Bajo mínimo** = existencia vendible < mínimo de esa sucursal. Los productos sin capas pero con mínimo aparecen
+  con existencia 0.
+- Lote obligatorio en medicamentos y biológicos; caducidad obligatoria en medicamentos, biológicos y alimento.
+- No se recibe mercancía ya caducada; solo el **inventario inicial** puede registrarla (para darla de baja después).
+- Las operaciones validan la existencia de **todos** los productos antes de descontar; si uno no alcanza, no se
+  descuenta nada (409 `EXISTENCIA_INSUFICIENTE` con disponible, solicitado y caducado).
+- Descuento de cada capa atómico (`cantidadRestante ≥ q` en el filtro) dentro de la transacción.
+- Costo de una porción = `importePartida(costoUnitario, cantidad, unidad)` (half-up por capa en granel).
+- **Ajustes:** siempre con usuario y PIN del dueño (aunque quien ajuste sea el dueño). Entrada: crea capa con lote,
+  caducidad y costo. Salida: FEFO sobre lo vigente o de una capa concreta (puede estar caducada: así se da de baja).
+  Pedir entrada exige `inventario:entradas`; salida, `inventario:salidas`. Quedan en bitácora con `autorizadoPor`.
+- Costos visibles solo para quien tiene `inventario:entradas` (almacén y dueño).
+- Reversión: devuelve a las capas exactas; el índice único de `movimientoOriginal` impide revertir dos veces.
+
 Pasos siguientes (diseño acordado): ver la tabla del plan. Ajustes ya decididos:
 - `Venta.partidas[]` guarda copia de precio unitario, lista de precios, tasa de IVA y descuento.
 - `Receta.partidas[]`: producto, cantidad prescrita, cantidad entregada, lote.
