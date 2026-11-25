@@ -22,6 +22,7 @@ const PERMISOS = [
   'traspasos:gestionar',
   'conteo_fisico:capturar',
   // Recetas
+  'recetas:capturar',
   'recetas:validar',
   // Autorizaciones (con PIN del dueño)
   'autorizar:descuento',
@@ -39,7 +40,7 @@ const PERMISOS = [
 ];
 
 const MATRIZ = {
-  cajero: ['ventas:cobrar', 'ventas:ver_propias_del_dia', 'existencias:ver', 'corte:capturar_conteo', 'catalogo:ver'],
+  cajero: ['ventas:cobrar', 'ventas:ver_propias_del_dia', 'existencias:ver', 'corte:capturar_conteo', 'catalogo:ver', 'recetas:capturar'],
   almacen: [
     'inventario:entradas',
     'inventario:salidas',
@@ -49,7 +50,7 @@ const MATRIZ = {
     'existencias:ver',
     'catalogo:ver'
   ],
-  medico_responsable: ['recetas:validar', 'existencias:ver', 'catalogo:ver'],
+  medico_responsable: ['recetas:capturar', 'recetas:validar', 'existencias:ver', 'catalogo:ver'],
   dueno: [...PERMISOS] // todo, incluidas las autorizaciones
 };
 

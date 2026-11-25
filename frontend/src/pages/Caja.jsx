@@ -10,6 +10,7 @@ import BuscadorProducto from '../components/BuscadorProducto';
 import Carrito from '../components/caja/Carrito';
 import PanelCobro from '../components/caja/PanelCobro';
 import VentasEspera from '../components/caja/VentasEspera';
+import SelectorReceta from '../components/caja/SelectorReceta';
 
 let siguienteClave = 0;
 const enfocar = id => setTimeout(() => document.getElementById(id)?.focus(), 0);
@@ -26,6 +27,7 @@ export default function Caja() {
   const [clave, setClave] = useState(nuevaClaveOperacion);
   const [ultima, setUltima] = useState(null);
   const [imprimir, setImprimir] = useState(true);
+  const [eligiendoReceta, setEligiendoReceta] = useState(null); // clave de la línea que elige receta
 
   useEffect(() => {
     clientesAPI.listar({ activo: true }).then(r => {
@@ -45,12 +47,14 @@ export default function Caja() {
     if (!p) error = 'Sin precio de venta';
     else if (!cantidad || Number.isNaN(cantidad)) error = l.producto.unidad === 'kg' ? 'Escribe los kg (hasta 3 decimales)' : 'Cantidad inválida';
     else if (Number.isNaN(pb)) error = 'Descuento inválido (0 a 100 %)';
-    else if (l.producto.requiereReceta) error = 'Requiere receta validada (se habilita en el Paso 6)';
+    else if (l.producto.requiereReceta && !l.receta) error = 'Requiere receta: elige una receta validada';
+    else if (l.receta && cantidad > l.receta.pendiente) error = `La receta R-${l.receta.folio} solo permite surtir ${baseATexto(l.receta.pendiente, l.producto.unidad)}`;
     const bruto = p && cantidad && !Number.isNaN(cantidad) ? importeBruto(p.precio, cantidad, l.producto.unidad) : 0;
     const descuento = Number.isNaN(pb) ? 0 : descuentoDe(bruto, pb);
     return { precio: p?.precio ?? null, lista: p?.lista, cantidad, puntosBase: pb, bruto, descuento, importe: bruto - descuento, error };
   }), [lineas, lista]);
 
+  const lineaReceta = lineas.find(l => l.clave === eligiendoReceta);
   const total = calculos.reduce((s, c) => s + c.importe, 0);
   const descuentoTotal = calculos.reduce((s, c) => s + c.descuento, 0);
   const listo = lineas.length > 0 && calculos.every(c => !c.error);
@@ -66,9 +70,10 @@ export default function Caja() {
         const n = Number(actuales[i].cantidad) || 0;
         return actuales.map((l, j) => (j === i ? { ...l, cantidad: String(n + 1) } : l));
       }
-      return [...actuales, { clave: claveNueva, producto, cantidad: producto.unidad === 'kg' ? '' : '1', descuento: '' }];
+      return [...actuales, { clave: claveNueva, producto, cantidad: producto.unidad === 'kg' ? '' : '1', descuento: '', receta: null }];
     });
     if (producto.unidad === 'kg') enfocar(`cantidad-${claveNueva}`);
+    if (producto.requiereReceta) setEligiendoReceta(claveNueva);
   }, []);
 
   const cambiar = (i, campo, valor) => setLineas(ls => ls.map((l, j) => (j === i ? { ...l, [campo]: valor } : l)));
@@ -84,7 +89,8 @@ export default function Caja() {
   const partidasApi = () => lineas.map((l, i) => ({
     producto: l.producto.id,
     cantidad: calculos[i].cantidad,
-    ...(calculos[i].puntosBase && { descuentoPorcentaje: calculos[i].puntosBase })
+    ...(calculos[i].puntosBase && { descuentoPorcentaje: calculos[i].puntosBase }),
+    ...(l.receta && { receta: l.receta.id })
   }));
 
   const cobrar = async (pagos, autorizacion) => {
@@ -128,7 +134,7 @@ export default function Caja() {
       const productos = await Promise.all(espera.partidas.map(p => productosAPI.obtener(p.producto).then(r => r.data.datos)));
       setLineas(espera.partidas.map((p, i) => {
         siguienteClave += 1;
-        return { clave: siguienteClave, producto: productos[i], cantidad: baseATexto(p.cantidad, productos[i].unidad), descuento: p.descuentoPorcentaje ? String(p.descuentoPorcentaje / 100) : '' };
+        return { clave: siguienteClave, producto: productos[i], cantidad: baseATexto(p.cantidad, productos[i].unidad), descuento: p.descuentoPorcentaje ? String(p.descuentoPorcentaje / 100) : '', receta: null };
       }));
       setClienteId(espera.cliente || clientes[0]?.id || '');
       setEsperaId(espera.id);
@@ -140,7 +146,7 @@ export default function Caja() {
 
   useEffect(() => {
     const teclas = e => {
-      if (panel) return;
+      if (panel || eligiendoReceta !== null) return;
       if (e.key === 'F2') {
         e.preventDefault();
         enfocar('buscador-caja');
@@ -152,7 +158,7 @@ export default function Caja() {
     };
     window.addEventListener('keydown', teclas);
     return () => window.removeEventListener('keydown', teclas);
-  }, [panel, listo, lineas.length]);
+  }, [panel, listo, lineas.length, eligiendoReceta]);
 
   return (
     <section className="grid lg:grid-cols-[1fr_20rem] gap-4 min-h-[calc(100vh-7rem)]">
@@ -167,7 +173,7 @@ export default function Caja() {
           </label>
         </div>
         <div className="flex-1 overflow-y-auto">
-          <Carrito lineas={lineas} calculos={calculos} alCambiar={cambiar} alQuitar={quitar} />
+          <Carrito lineas={lineas} calculos={calculos} alCambiar={cambiar} alQuitar={quitar} alElegirReceta={setEligiendoReceta} />
         </div>
       </div>
 
@@ -205,6 +211,16 @@ export default function Caja() {
         <PanelCobro total={total} pideAutorizacion={descuentoTotal > 0} cobrando={cobrando} alCobrar={cobrar} alCerrar={() => { setPanel(null); enfocar('buscador-caja'); }} />
       )}
       {panel === 'espera' && <VentasEspera alRecuperar={recuperar} alCerrar={() => setPanel(null)} />}
+      {lineaReceta && (
+        <SelectorReceta
+          producto={lineaReceta.producto}
+          alCerrar={() => setEligiendoReceta(null)}
+          alElegir={receta => {
+            setLineas(ls => ls.map(l => (l.clave === eligiendoReceta ? { ...l, receta } : l)));
+            setEligiendoReceta(null);
+          }}
+        />
+      )}
     </section>
   );
 }

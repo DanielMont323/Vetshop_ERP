@@ -6,8 +6,8 @@ test('los 4 roles del plan', () => {
   expect([...ROLES].sort()).toEqual(['almacen', 'cajero', 'dueno', 'medico_responsable']);
 });
 
-test('cajero: vender, ver sus ventas del día, ver existencias, capturar conteo de corte, ver catálogo', () => {
-  expect([...MATRIZ.cajero].sort()).toEqual(['catalogo:ver', 'corte:capturar_conteo', 'existencias:ver', 'ventas:cobrar', 'ventas:ver_propias_del_dia']);
+test('cajero: vender, ver sus ventas del día, ver existencias, capturar conteo de corte, ver catálogo, capturar recetas', () => {
+  expect([...MATRIZ.cajero].sort()).toEqual(['catalogo:ver', 'corte:capturar_conteo', 'existencias:ver', 'recetas:capturar', 'ventas:cobrar', 'ventas:ver_propias_del_dia']);
 });
 
 test('almacén: entradas/salidas, recepción, traspasos, conteo físico (y ver existencias)', () => {
@@ -17,8 +17,8 @@ test('almacén: entradas/salidas, recepción, traspasos, conteo físico (y ver e
   expect(tienePermiso('almacen', 'ventas:cobrar')).toBe(false);
 });
 
-test('médico responsable: validar recetas, ver existencias y ver catálogo, nada más', () => {
-  expect(permisosDe('medico_responsable').sort()).toEqual(['catalogo:ver', 'existencias:ver', 'recetas:validar']);
+test('médico responsable: capturar y validar recetas, ver existencias y ver catálogo, nada más', () => {
+  expect(permisosDe('medico_responsable').sort()).toEqual(['catalogo:ver', 'existencias:ver', 'recetas:capturar', 'recetas:validar']);
 });
 
 test('dueño: todo, incluidas las autorizaciones', () => {

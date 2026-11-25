@@ -38,6 +38,20 @@ Cosas detectadas y aceptadas por ahora, para resolver más adelante. Cada una in
   cerrado alteraría ese corte.
 - **Qué hacer en el Paso 7:** decidir si se permite (con registro en el turno actual) o se bloquea.
 
+## Recetas
+
+### Almacenamiento de archivos en producción
+- **Qué pasa:** el driver `vercel_blob` de `services/almacenamiento.js` aún no está implementado. En Vercel el disco
+  no es persistente, así que en producción hay que configurarlo antes de capturar recetas con archivo.
+- **Qué hacer:** crear un almacén Blob en Vercel (privado), poner `BLOB_READ_WRITE_TOKEN` y `ALMACENAMIENTO=vercel_blob`,
+  e implementar `guardar`/`leer` con `@vercel/blob`. (Alternativa: Cloudinary con acceso autenticado.)
+- **Decidir antes de:** el piloto de diciembre.
+
+### Vigencia de las recetas
+- **Qué pasa:** una receta validada se puede surtir sin límite de tiempo.
+- **Opción:** fijar una vigencia (p. ej. 30 días desde la fecha de la receta, o la que marque la norma para
+  controlados) y rechazar el surtido después.
+
 ## Resueltos
 
 - **Cambiar la unidad de un producto con existencias** (Paso 3): `productos.actualizar()` responde 409

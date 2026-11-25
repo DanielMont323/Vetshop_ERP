@@ -11,6 +11,7 @@ import Compras from './pages/Compras';
 import Proveedores from './pages/Proveedores';
 import Caja from './pages/Caja';
 import VentasDia from './pages/VentasDia';
+import Recetas from './pages/Recetas';
 
 function Inicio() {
   const { usuario, sucursalActiva } = useAuth();
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/proveedores" element={<Proveedores />} />
             <Route path="/caja" element={<Caja />} />
             <Route path="/ventas" element={<VentasDia />} />
+            <Route path="/recetas" element={<Recetas />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

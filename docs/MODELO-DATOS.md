@@ -125,6 +125,24 @@ Decisiones del Paso 5:
 - Clientes: los consultan los 4 roles (`catalogo:ver`); crearlos o cambiarles la lista de precios es del dueño
   (`clientes:gestionar`).
 
+Paso 6 (recetas):
+
+| Colección | Campos clave | Índices |
+|---|---|---|
+| `Receta` | sucursal, folio, fechaReceta, medico{nombre, cedula}, propietario{nombre, telefono}, paciente{nombre, especie}, partidas[{producto, sku, nombre, unidad, esControlado, cantidadPrescrita, cantidadEntregada, indicaciones, entregas[{venta, folio, cantidad, lotes[], fecha}]}], archivo{clave, nombre, tipo, tamano}?, estado, validadaPor(+nombre), fechaValidacion, usuario | `{sucursal, folio}` único, `{sucursal, estado, createdAt}`, `{sucursal, partidas.producto, estado}`, `partidas.entregas.venta` |
+
+Decisiones del Paso 6:
+- Flujo: **pendiente** (editable) → **validada** → **surtida** (todo entregado) | **cancelada** (solo sin entregas).
+- **Valida solo el médico responsable** asignado a la sucursal, con su usuario y PIN (el dueño no valida recetas).
+- **Controlados:** no se validan sin la foto o escaneo de la receta.
+- Una receta solo incluye productos con `requiereReceta`, cada uno una vez (se suma en una partida).
+- En la caja, cada partida de un producto con receta lleva `receta`; en la misma transacción de la venta se suma
+  lo entregado (con los lotes que salieron). **Entregado ≤ prescrito** siempre (409 `RECETA_EXCEDIDA`).
+- Cancelar la venta quita esas entregas y la receta vuelve a **validada**.
+- **Archivo fuera de Mongo** (`services/almacenamiento.js`): `ALMACENAMIENTO=local` (carpeta, solo desarrollo) o
+  `vercel_blob` (pendiente de configurar). JPG, PNG o PDF, máx. 5 MB, con verificación de la firma de bytes.
+- Capturar y consultar: `recetas:capturar` (cajero, médico responsable, dueño). El almacén no ve recetas.
+
 Pasos siguientes (diseño acordado): ver la tabla del plan. Ajustes ya decididos:
 - `Venta.partidas[]` guarda copia de precio unitario, lista de precios, tasa de IVA y descuento.
 - `Receta.partidas[]`: producto, cantidad prescrita, cantidad entregada, lote.

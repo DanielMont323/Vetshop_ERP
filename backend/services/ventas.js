@@ -18,6 +18,7 @@ const { calcularPartida, totales, calcularPagos } = require('./calculoVenta');
 const { resolverPrecio } = require('./precios');
 const { publicoGeneral } = require('./clientes');
 const inventario = require('./inventario');
+const recetas = require('./recetas');
 const { verificarPin } = require('./autorizaciones');
 const auditoria = require('./auditoria');
 
@@ -47,12 +48,14 @@ async function armarPartidas(entradas, listaPrecios, session) {
     if (!producto.activo) throw solicitudInvalida(`${producto.nombre} está desactivado`);
     const precio = await resolverPrecio(producto._id, listaPrecios, session);
     if (!precio) throw conflicto(`${producto.nombre} no tiene precio de venta`, 'SIN_PRECIO');
-    partidas.push(calcularPartida({ producto, cantidad: e.cantidad, precio, descuentoPorcentaje: e.descuentoPorcentaje, descuentoMonto: e.descuentoMonto }));
+    const partida = calcularPartida({ producto, cantidad: e.cantidad, precio, descuentoPorcentaje: e.descuentoPorcentaje, descuentoMonto: e.descuentoMonto });
+    if (e.receta) partida.receta = aId(e.receta);
+    partidas.push(partida);
   }
-  // Recetas: se habilitan en el Paso 6. Mientras tanto, un producto con receta no se puede cobrar.
-  const conReceta = partidas.filter(p => p.requiereReceta);
-  if (conReceta.length) {
-    throw new ErrorApp(409, `Requiere receta validada: ${conReceta.map(p => p.nombre).join(', ')}`, 'RECETA_REQUERIDA', { productos: conReceta.map(p => p.producto) });
+  // Un producto con receta solo se cobra ligado a una receta validada (se verifica al surtirla)
+  const sinReceta = partidas.filter(p => p.requiereReceta && !p.receta);
+  if (sinReceta.length) {
+    throw new ErrorApp(409, `Requiere receta validada: ${sinReceta.map(p => p.nombre).join(', ')}`, 'RECETA_REQUERIDA', { productos: sinReceta.map(p => p.producto) });
   }
   return partidas;
 }
@@ -124,13 +127,23 @@ async function cobrar(alcance, actor, datos, { verCostos = false } = {}) {
         partidas[c.partida].costo = c.costoTotal;
       }
 
+      const folio = await siguienteFolio(sucursal, SERIE_VENTA, session);
+
+      // Recetas: suma lo entregado (≤ prescrito) con los lotes que salieron
+      const entregas = partidas
+        .filter(p => p.receta)
+        .map(p => ({ receta: p.receta, producto: p.producto, cantidad: p.cantidad, lotes: p.lotes.map(l => ({ lote: l.lote, caducidad: l.caducidad, cantidad: l.cantidad })) }));
+      if (entregas.length) {
+        await recetas.surtirEnVenta({ sucursal, venta: { id: ventaId, folio: `${SERIE_VENTA}-${folio}` }, entregas, fecha }, session);
+      }
+
       if (datos.esperaId) {
         await VentaEnEspera.deleteOne({ _id: aId(datos.esperaId), sucursal }, { session });
       }
 
       const [nueva] = await Venta.create(
         [{
-          _id: ventaId, sucursal, serie: SERIE_VENTA, folio: await siguienteFolio(sucursal, SERIE_VENTA, session),
+          _id: ventaId, sucursal, serie: SERIE_VENTA, folio,
           caja: datos.caja || 1, cajero: actor._id, cajeroNombre: actor.nombre,
           cliente: cliente._id, clienteNombre: cliente.nombre, listaPrecios: cliente.listaPrecios,
           partidas, ...sumas, costo: partidas.reduce((s, p) => s + p.costo, 0),
@@ -217,6 +230,8 @@ async function cancelar(alcance, actor, id, { motivo, autorizacion }) {
       throw conflicto('La venta ya está cancelada', 'VENTA_CANCELADA');
     }
     await inventario.revertirSalidas({ sucursal, referenciaId: venta._id, usuario: actor._id, nota: `Cancelación venta ${venta.serie}-${venta.folio}: ${motivo}`, autorizadoPor: autorizador.id, fecha }, session);
+    // Lo surtido de recetas vuelve a quedar pendiente
+    await recetas.revertirEnVenta({ sucursal, ventaId: venta._id }, session);
     await auditoria.registrar(
       {
         usuario: actor._id, autorizadoPor: autorizador.id, accion: 'venta.cancelar', entidad: 'Venta', entidadId: venta._id, sucursal, motivo,

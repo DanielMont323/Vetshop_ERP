@@ -4,7 +4,7 @@ import { formatearDinero } from '../../utils/formato';
 const celda = 'w-full rounded border border-slate-300 px-2 py-1 text-right tabular-nums';
 
 // Líneas del carrito con vista previa de importe. `calculos[i]` = { precio, lista, bruto, descuento, importe, error }
-export default function Carrito({ lineas, calculos, alCambiar, alQuitar }) {
+export default function Carrito({ lineas, calculos, alCambiar, alQuitar, alElegirReceta }) {
   if (lineas.length === 0) {
     return (
       <div className="h-full grid place-items-center text-slate-400 text-center p-8">
@@ -36,6 +36,11 @@ export default function Carrito({ lineas, calculos, alCambiar, alQuitar }) {
                 </span>
                 <span className="text-xs font-mono text-slate-500">{l.producto.sku}</span>
                 {c.lista && c.lista !== 'publico' && <span className="text-xs text-emerald-700"> · precio {c.lista}</span>}
+                {l.producto.requiereReceta && (
+                  <button type="button" onClick={() => alElegirReceta(l.clave)} className="block text-xs text-emerald-700 underline">
+                    {l.receta ? `Receta R-${l.receta.folio} (cambiar)` : 'Elegir receta'}
+                  </button>
+                )}
                 {c.error && <span className="block text-xs text-red-700">{c.error}</span>}
               </td>
               <td className="px-2 py-1.5">
