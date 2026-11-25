@@ -33,6 +33,7 @@ const PERMISOS = [
   'usuarios:gestionar',
   'sucursales:gestionar',
   'catalogo:gestionar',
+  'clientes:gestionar',
   'auditoria:ver',
   'reportes:ver'
 ];
