@@ -191,3 +191,9 @@ export const traspasosAPI = {
   autorizarDiferencia: (id, datos) => api.post(`/traspasos/${id}/autorizar-diferencia`, datos),
   cancelar: (id, motivo) => api.post(`/traspasos/${id}/cancelar`, { motivo })
 };
+
+export const reportesAPI = {
+  dashboard: () => api.get('/reportes/dashboard'),
+  ventas: params => api.get('/reportes/ventas', { params }),
+  excel: params => api.get('/reportes/ventas.xlsx', { params, responseType: 'blob', timeout: 60000 })
+};

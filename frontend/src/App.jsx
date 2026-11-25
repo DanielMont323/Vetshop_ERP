@@ -14,9 +14,12 @@ import VentasDia from './pages/VentasDia';
 import Recetas from './pages/Recetas';
 import Corte from './pages/Corte';
 import Traspasos from './pages/Traspasos';
+import Dashboard from './pages/Dashboard';
+import Reportes from './pages/Reportes';
 
 function Inicio() {
-  const { usuario, sucursalActiva } = useAuth();
+  const { usuario, sucursalActiva, puede } = useAuth();
+  if (puede('reportes:ver')) return <Dashboard />;
   const sucursal = usuario.sucursales.find(s => s.id === sucursalActiva);
   return (
     <section>
@@ -45,6 +48,7 @@ export default function App() {
             <Route path="/recetas" element={<Recetas />} />
             <Route path="/corte" element={<Corte />} />
             <Route path="/traspasos" element={<Traspasos />} />
+            <Route path="/reportes" element={<Reportes />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
