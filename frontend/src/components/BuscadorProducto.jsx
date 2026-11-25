@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { mensajeDeError, productosAPI } from '../services/api';
 
 // Campo para agregar un producto: con el lector (código + Enter) o escribiendo parte del nombre.
-export default function BuscadorProducto({ alElegir, placeholder = 'Escanea o escribe el producto' }) {
+export default function BuscadorProducto({ alElegir, placeholder = 'Escanea o escribe el producto', idEntrada, autoFocus = false }) {
   const [texto, setTexto] = useState('');
   const [opciones, setOpciones] = useState([]);
   const entrada = useRef(null);
@@ -45,6 +45,8 @@ export default function BuscadorProducto({ alElegir, placeholder = 'Escanea o es
       <ScanBarcode size={16} className="absolute left-3 top-3 text-slate-400" aria-hidden="true" />
       <input
         ref={entrada}
+        id={idEntrada}
+        autoFocus={autoFocus}
         className="w-full rounded-lg border border-slate-300 pl-9 pr-3 py-2"
         placeholder={placeholder}
         aria-label="Buscar producto"

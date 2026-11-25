@@ -68,7 +68,8 @@ async function main() {
     ['VAC-RAB', 2, 15000, 'VR-OLD', '10/2026'],
     ['VAC-RAB', 6, 16000, 'VR-0310', enDias(12)],
     ['ANTB-100', 5, 21000, 'AB-77', '11/2027'],
-    ['COLLAR-M', 2, 7000, undefined, undefined]
+    ['COLLAR-M', 2, 7000, undefined, undefined],
+    ['COLLAR-M', 30, 7200, undefined, undefined]
   ];
   await conTransaccion(async session => {
     for (const [sku, cantidad, costoUnitario, lote, caducidad] of entradas) {
@@ -81,6 +82,13 @@ async function main() {
   await Proveedor.create([
     { nombre: 'Distribuidora Veterinaria (prueba)', diasCredito: 30, contacto: 'Ventas', telefono: '3110000000' },
     { nombre: 'Alimentos Mascota (prueba)', diasCredito: 0 }
+  ]);
+
+  const Cliente = require('../models/Cliente');
+  await Cliente.create([
+    { nombre: 'Público en general', tipo: 'publico', listaPrecios: 'publico', esPublicoGeneral: true },
+    { nombre: 'Clínica Patitas (prueba)', tipo: 'clinica', listaPrecios: 'clinica' },
+    { nombre: 'Estética Peludos (prueba)', tipo: 'estetica', listaPrecios: 'mayoreo' }
   ]);
 
   const PORT = process.env.PORT || 5000;
