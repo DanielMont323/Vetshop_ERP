@@ -1,0 +1,71 @@
+// Ticket de venta en HTML para impresora térmica de 58 u 80 mm (sin html2canvas: se imprime
+// directo con window.print()). Todo texto que viene de la BD se escapa.
+const { formatear } = require('./dinero');
+const { baseATexto } = require('./cantidades');
+const { formatearLocal } = require('./fechas');
+
+const escapar = texto =>
+  String(texto ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const METODOS = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia' };
+const NEGOCIO = 'Huellitas Vetshop';
+
+function cantidadTexto(p) {
+  return p.unidad === 'kg' ? `${baseATexto(p.cantidad, 'kg')} kg` : `${p.cantidad}`;
+}
+
+/**
+ * @param {object} venta  venta pública (services/ventas)
+ * @param {object} opciones { sucursal: nombre, ancho: 58 | 80 }
+ */
+function htmlTicket(venta, { sucursal, ancho = 80 } = {}) {
+  const mm = ancho === 58 ? 58 : 80;
+  const filas = venta.partidas
+    .map(p => {
+      const unitario = `${formatear(p.precioUnitario)}${p.unidad === 'kg' ? '/kg' : ''}`;
+      const descuento = p.descuento > 0 ? `<div class="d">Descuento −${formatear(p.descuento)}</div>` : '';
+      return `<div class="p"><div>${escapar(p.nombre)}</div><div class="f"><span>${cantidadTexto(p)} × ${unitario}</span><span>${formatear(p.bruto)}</span></div>${descuento}</div>`;
+    })
+    .join('');
+  const pagos = venta.pagos.map(p => `<div class="f"><span>${METODOS[p.metodo]}</span><span>${formatear(p.monto)}</span></div>`).join('');
+  const cancelada = venta.estado === 'cancelada' ? '<div class="c">*** CANCELADA ***</div>' : '';
+
+  return `<!doctype html>
+<html lang="es-MX"><head><meta charset="utf-8"><title>Ticket ${escapar(venta.serie)}-${venta.folio}</title>
+<style>
+  @page { size: ${mm}mm auto; margin: 0; }
+  * { box-sizing: border-box; }
+  body { width: ${mm}mm; margin: 0; padding: 2mm 3mm; font: ${mm === 58 ? 10 : 12}px/1.3 monospace; color: #000; }
+  h1 { font-size: 1.2em; text-align: center; margin: 0; }
+  .centro { text-align: center; }
+  .f { display: flex; justify-content: space-between; gap: 4px; }
+  .p { margin: 2px 0; }
+  .d { text-align: right; }
+  .t { font-weight: bold; font-size: 1.15em; }
+  .c { text-align: center; font-weight: bold; margin: 4px 0; }
+  hr { border: 0; border-top: 1px dashed #000; margin: 4px 0; }
+</style></head>
+<body>
+  <h1>${NEGOCIO}</h1>
+  <div class="centro">${escapar(sucursal)}</div>
+  <hr>
+  <div class="f"><span>Folio</span><span>${escapar(venta.serie)}-${venta.folio}</span></div>
+  <div class="f"><span>Fecha</span><span>${formatearLocal(venta.fecha, 'dd/MM/yyyy HH:mm')}</span></div>
+  <div class="f"><span>Atendió</span><span>${escapar(venta.cajero.nombre)}</span></div>
+  <div class="f"><span>Cliente</span><span>${escapar(venta.cliente.nombre)}</span></div>
+  ${cancelada}
+  <hr>
+  ${filas}
+  <hr>
+  ${venta.descuento > 0 ? `<div class="f"><span>Subtotal</span><span>${formatear(venta.subtotal)}</span></div><div class="f"><span>Descuento</span><span>−${formatear(venta.descuento)}</span></div>` : ''}
+  <div class="f t"><span>TOTAL</span><span>${formatear(venta.total)}</span></div>
+  <div class="f"><span>IVA incluido</span><span>${formatear(venta.iva)}</span></div>
+  <hr>
+  ${pagos}
+  ${venta.cambio > 0 ? `<div class="f t"><span>Cambio</span><span>${formatear(venta.cambio)}</span></div>` : ''}
+  <hr>
+  <div class="centro">¡Gracias por su compra!</div>
+</body></html>`;
+}
+
+module.exports = { htmlTicket, escapar };

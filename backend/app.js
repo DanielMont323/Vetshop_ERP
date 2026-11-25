@@ -27,7 +27,8 @@ function opcionesCors() {
 const RUTAS_OPERATIVAS = [
   ['/api/existencias', require('./routes/existencias')],
   ['/api/inventario', require('./routes/inventario')],
-  ['/api/compras', require('./routes/compras')]
+  ['/api/compras', require('./routes/compras')],
+  ['/api/ventas', require('./routes/ventas')]
 ];
 
 // opciones.rutasOperativas: rutas extra montadas igual que las operativas (las usan las pruebas)
@@ -66,6 +67,7 @@ function crearApp({ rutasOperativas = [] } = {}) {
   app.use('/api/productos', autenticar, require('./routes/productos'));
   app.use('/api/listas-precios', autenticar, require('./routes/listasPrecios'));
   app.use('/api/proveedores', autenticar, require('./routes/proveedores'));
+  app.use('/api/clientes', autenticar, require('./routes/clientes'));
 
   // Rutas operativas: siempre autenticar → scopeSucursal → router
   for (const [ruta, router] of [...RUTAS_OPERATIVAS, ...rutasOperativas]) {

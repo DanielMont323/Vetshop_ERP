@@ -26,6 +26,18 @@ Cosas detectadas y aceptadas por ahora, para resolver más adelante. Cada una in
   o registrar una "devolución a proveedor" como salida dirigida a esas capas.
 - **Decidir antes de:** el arranque en enero.
 
+## Ventas
+
+### Devoluciones parciales
+- **Qué pasa:** hoy una venta solo se cancela completa. Si el cliente regresa una pieza de tres, hay que cancelar y
+  volver a cobrar.
+- **Opción:** devolución parcial con autorización (movimiento contrario de esas partidas y nota de crédito/reembolso).
+
+### Cancelar una venta de un turno ya cerrado
+- **Qué pasa:** la cancelación no revisa el turno (los turnos llegan en el Paso 7). Cancelar una venta de un corte ya
+  cerrado alteraría ese corte.
+- **Qué hacer en el Paso 7:** decidir si se permite (con registro en el turno actual) o se bloquea.
+
 ## Resueltos
 
 - **Cambiar la unidad de un producto con existencias** (Paso 3): `productos.actualizar()` responde 409
