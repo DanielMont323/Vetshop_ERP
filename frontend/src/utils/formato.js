@@ -120,3 +120,11 @@ export const NOMBRES_ESTADO_RECETA = {
   surtida: { texto: 'Surtida', clase: 'bg-slate-200 text-slate-700' },
   cancelada: { texto: 'Cancelada', clase: 'bg-red-100 text-red-800' }
 };
+
+export const NOMBRES_ESTADO_TRASPASO = {
+  en_transito: { texto: 'En tránsito', clase: 'bg-sky-100 text-sky-800' },
+  recibido: { texto: 'Recibido', clase: 'bg-emerald-100 text-emerald-800' },
+  con_diferencia: { texto: 'Con diferencia', clase: 'bg-red-100 text-red-800' },
+  diferencia_autorizada: { texto: 'Diferencia autorizada', clase: 'bg-amber-100 text-amber-800' },
+  cancelado: { texto: 'Cancelado', clase: 'bg-slate-200 text-slate-700' }
+};

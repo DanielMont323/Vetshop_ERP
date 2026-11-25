@@ -1,5 +1,5 @@
 import { Link, NavLink, Navigate, Outlet } from 'react-router-dom';
-import { Boxes, Calculator, FileText, KeyRound, LogOut, Package, PawPrint, ReceiptText, ShoppingCart, Store, Tags, Truck, Users } from 'lucide-react';
+import { ArrowLeftRight, Boxes, Calculator, FileText, KeyRound, LogOut, Package, PawPrint, ReceiptText, ShoppingCart, Store, Tags, Truck, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const NOMBRES_ROL = {
@@ -33,6 +33,7 @@ export default function Layout() {
                 puede('recetas:capturar') && ['/recetas', 'Recetas', FileText],
                 puede('existencias:ver') && ['/existencias', 'Existencias', Boxes],
                 puede('recepcion:registrar') && ['/compras', 'Recepción', Truck],
+                puede('traspasos:gestionar') && ['/traspasos', 'Traspasos', ArrowLeftRight],
                 puede('recepcion:registrar') && ['/proveedores', 'Proveedores', Users],
                 ['/productos', 'Productos', Package],
                 ['/listas-precios', 'Precios', Tags]

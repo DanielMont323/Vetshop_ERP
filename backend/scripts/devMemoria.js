@@ -76,6 +76,17 @@ async function main() {
       await inv.registrarEntrada({ sucursal: centro._id, producto: productos[sku]._id, cantidad, costoUnitario, lote, caducidad, origen: 'inventario_inicial', permitirCaducado: true, usuario: dueno._id }, session);
     }
     await inv.registrarEntrada({ sucursal: norte._id, producto: productos['COLLAR-M']._id, cantidad: 10, costoUnitario: 7000, origen: 'inventario_inicial', usuario: dueno._id }, session);
+    // El almacén surte a las tiendas: tiene de todo (para probar traspasos)
+    const delAlmacen = [
+      ['CRQ-AD-20', 40, 97000, 'CR-2701', '10/2027'],
+      ['GRA-GATO', 100000, 5100, 'GG-2', '07/2027'],
+      ['VAC-RAB', 30, 15500, 'VR-1101', '09/2027'],
+      ['ANTB-100', 20, 20500, 'AB-80', '01/2028'],
+      ['COLLAR-M', 50, 7000, undefined, undefined]
+    ];
+    for (const [sku, cantidad, costoUnitario, lote, caducidad] of delAlmacen) {
+      await inv.registrarEntrada({ sucursal: almacen._id, producto: productos[sku]._id, cantidad, costoUnitario, lote, caducidad, origen: 'inventario_inicial', usuario: dueno._id }, session);
+    }
   });
 
   const Proveedor = require('../models/Proveedor');

@@ -30,7 +30,8 @@ const RUTAS_OPERATIVAS = [
   ['/api/compras', require('./routes/compras')],
   ['/api/ventas', require('./routes/ventas')],
   ['/api/recetas', require('./routes/recetas')],
-  ['/api/turnos', require('./routes/turnos')]
+  ['/api/turnos', require('./routes/turnos')],
+  ['/api/traspasos', require('./routes/traspasos')]
 ];
 
 // opciones.rutasOperativas: rutas extra montadas igual que las operativas (las usan las pruebas)
