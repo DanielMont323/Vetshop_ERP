@@ -3,11 +3,11 @@ const { MATRIZ, PERMISOS, ROLES, tienePermiso, permisosDe } = require('../config
 const { requirePermiso } = require('../middleware/permisos');
 
 test('los 4 roles del plan', () => {
-  expect(ROLES.sort()).toEqual(['almacen', 'cajero', 'dueno', 'medico_responsable']);
+  expect([...ROLES].sort()).toEqual(['almacen', 'cajero', 'dueno', 'medico_responsable']);
 });
 
-test('cajero: vender, ver sus ventas del día, ver existencias, capturar conteo de corte', () => {
-  expect(MATRIZ.cajero.sort()).toEqual(['corte:capturar_conteo', 'existencias:ver', 'ventas:cobrar', 'ventas:ver_propias_del_dia']);
+test('cajero: vender, ver sus ventas del día, ver existencias, capturar conteo de corte, ver catálogo', () => {
+  expect([...MATRIZ.cajero].sort()).toEqual(['catalogo:ver', 'corte:capturar_conteo', 'existencias:ver', 'ventas:cobrar', 'ventas:ver_propias_del_dia']);
 });
 
 test('almacén: entradas/salidas, recepción, traspasos, conteo físico (y ver existencias)', () => {
@@ -17,8 +17,8 @@ test('almacén: entradas/salidas, recepción, traspasos, conteo físico (y ver e
   expect(tienePermiso('almacen', 'ventas:cobrar')).toBe(false);
 });
 
-test('médico responsable: validar recetas y ver existencias, nada más', () => {
-  expect(permisosDe('medico_responsable').sort()).toEqual(['existencias:ver', 'recetas:validar']);
+test('médico responsable: validar recetas, ver existencias y ver catálogo, nada más', () => {
+  expect(permisosDe('medico_responsable').sort()).toEqual(['catalogo:ver', 'existencias:ver', 'recetas:validar']);
 });
 
 test('dueño: todo, incluidas las autorizaciones', () => {
@@ -27,6 +27,11 @@ test('dueño: todo, incluidas las autorizaciones', () => {
     expect(tienePermiso('dueno', p)).toBe(true);
     for (const rol of ['cajero', 'almacen', 'medico_responsable']) expect(tienePermiso(rol, p)).toBe(false);
   }
+});
+
+test('catalogo:ver lo tienen los 4 roles; catalogo:gestionar solo el dueño', () => {
+  for (const rol of ROLES) expect(tienePermiso(rol, 'catalogo:ver')).toBe(true);
+  for (const rol of ['cajero', 'almacen', 'medico_responsable']) expect(tienePermiso(rol, 'catalogo:gestionar')).toBe(false);
 });
 
 test('nadie más que el dueño gestiona usuarios y sucursales', () => {
