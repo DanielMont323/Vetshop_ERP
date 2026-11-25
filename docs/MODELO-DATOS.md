@@ -167,6 +167,22 @@ Decisiones del Paso 7:
 - **Cancelar** una venta de un turno cerrado: el dinero sale del turno abierto de quien cancela.
 - El dueño ve lo esperado en vivo y todos los turnos (`turnos:ver_todos`); el cajero solo los suyos.
 
+Paso 8 (traspasos):
+
+| Colección | Campos clave | Índices |
+|---|---|---|
+| `Traspaso` | folio (por origen), origen(+nombre), destino(+nombre), partidas[{producto, sku, nombre, unidad, cantidad, lotes[{capaOrigen, lote, caducidad, costoUnitario, enviado, recibido?, capaDestino?}]}], estado, observaciones, envio{usuario, fecha}, recepcion{usuario, fecha, observaciones}, diferencia{autorizadoPor, nota, fecha}, cancelacion{usuario, motivo, fecha} | `{origen, folio}` único, `{origen, estado, createdAt}`, `{destino, estado, createdAt}` |
+
+Decisiones del Paso 8:
+- Flujo **en_transito → recibido | con_diferencia → diferencia_autorizada | cancelado**.
+- **Enviar** desde la sucursal activa (origen): salida FEFO, nunca caducados, en una transacción. La mercancía en
+  tránsito ya no está en el origen ni todavía en el destino.
+- **Recibir** solo desde el destino: se captura lo que llegó de cada lote (≤ enviado) y entra con el **mismo lote,
+  caducidad y costo**. Un lote que caducó en el camino sí se registra (para darlo de baja con un ajuste).
+- **Diferencia** (llegó menos): queda en bitácora y el dueño la autoriza con PIN (`autorizar:ajuste_inventario`).
+- **Cancelar** solo en tránsito y desde el origen; la mercancía regresa a los lotes exactos.
+- Permiso `traspasos:gestionar` (almacén y dueño). El alcance usa origen **y** destino.
+
 Pasos siguientes (diseño acordado): ver la tabla del plan. Ajustes ya decididos:
 - `Venta.partidas[]` guarda copia de precio unitario, lista de precios, tasa de IVA y descuento.
 - `Receta.partidas[]`: producto, cantidad prescrita, cantidad entregada, lote.
