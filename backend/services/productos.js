@@ -4,10 +4,11 @@ const mongoose = require('mongoose');
 const Producto = require('../models/Producto');
 const Sucursal = require('../models/Sucursal');
 const { conTransaccion } = require('../helpers/transaccion');
-const { noEncontrado, solicitudInvalida } = require('../helpers/errores');
+const { noEncontrado, solicitudInvalida, conflicto } = require('../helpers/errores');
 const { normalizar, escaparRegex } = require('../helpers/texto');
 const precios = require('./precios');
 const auditoria = require('./auditoria');
+const { tieneInventario } = require('./inventario');
 
 const CAMPOS_EDITABLES = [
   'sku', 'codigoBarras', 'nombre', 'categoria', 'unidad', 'presentacion',
@@ -109,7 +110,10 @@ async function actualizar(id, { precios: preciosNuevos, ...cambios }, actor) {
     if (!producto) throw noEncontrado('Producto no encontrado');
     const antes = paraBitacora(producto);
 
-    // PENDIENTE (Paso 3): impedir cambiar la unidad si el producto ya tiene existencias o movimientos.
+    // Con inventario registrado, cambiar la unidad haría que piezas se leyeran como gramos (o al revés)
+    if (cambios.unidad !== undefined && cambios.unidad !== producto.unidad && (await tieneInventario(producto._id, session))) {
+      throw conflicto('No se puede cambiar la unidad: el producto ya tiene inventario registrado', 'UNIDAD_CON_INVENTARIO');
+    }
     if (cambios.minimos !== undefined) await validarMinimos(cambios.minimos, session);
     for (const campo of CAMPOS_EDITABLES) {
       if (cambios[campo] !== undefined) producto[campo] = cambios[campo];
@@ -126,4 +130,4 @@ async function actualizar(id, { precios: preciosNuevos, ...cambios }, actor) {
   });
 }
 
-module.exports = { buscar, obtener, porCodigo, crear, actualizar, LIMITE_MAXIMO };
+module.exports = { buscar, obtener, porCodigo, crear, actualizar, filtroBusqueda, LIMITE_MAXIMO };
