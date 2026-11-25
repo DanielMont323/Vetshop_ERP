@@ -112,3 +112,13 @@ export const listasPreciosAPI = {
   fijar: (clave, productoId, precio) => api.put(`/listas-precios/${clave}/precios/${productoId}`, { precio }),
   quitar: (clave, productoId) => api.delete(`/listas-precios/${clave}/precios/${productoId}`)
 };
+
+export const existenciasAPI = {
+  listar: params => api.get('/existencias', { params }),
+  lotes: productoId => api.get(`/existencias/${productoId}/lotes`)
+};
+
+export const inventarioAPI = {
+  movimientos: params => api.get('/inventario/movimientos', { params }),
+  ajustar: datos => api.post('/inventario/ajustes', datos)
+};

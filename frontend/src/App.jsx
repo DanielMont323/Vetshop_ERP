@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import CambiarPassword from './pages/CambiarPassword';
 import Productos from './pages/Productos';
 import ListasPrecios from './pages/ListasPrecios';
+import Existencias from './pages/Existencias';
 
 function Inicio() {
   const { usuario, sucursalActiva } = useAuth();
@@ -29,6 +30,7 @@ export default function App() {
             <Route path="/cambiar-password" element={<CambiarPassword />} />
             <Route path="/productos" element={<Productos />} />
             <Route path="/listas-precios" element={<ListasPrecios />} />
+            <Route path="/existencias" element={<Existencias />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
