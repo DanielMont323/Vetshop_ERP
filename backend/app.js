@@ -16,7 +16,7 @@ function opcionesCors() {
       if (!origin) return callback(null, true);
       callback(null, permitidos.includes(origin));
     },
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Sucursal'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Sucursal', 'X-Nombre-Archivo'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     maxAge: 600
   };
@@ -28,7 +28,8 @@ const RUTAS_OPERATIVAS = [
   ['/api/existencias', require('./routes/existencias')],
   ['/api/inventario', require('./routes/inventario')],
   ['/api/compras', require('./routes/compras')],
-  ['/api/ventas', require('./routes/ventas')]
+  ['/api/ventas', require('./routes/ventas')],
+  ['/api/recetas', require('./routes/recetas')]
 ];
 
 // opciones.rutasOperativas: rutas extra montadas igual que las operativas (las usan las pruebas)

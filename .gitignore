@@ -21,3 +21,6 @@ Thumbs.db
 .vscode/
 .idea/
 .vercel
+
+# Archivos subidos en desarrollo (almacenamiento local)
+backend/archivos/

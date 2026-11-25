@@ -45,7 +45,8 @@ const partidaSchema = new mongoose.Schema(
     iva: centavos(), // IVA contenido en el importe
     costo: centavos(), // costo de los lotes que salieron (sin IVA)
     lotes: [loteVendidoSchema],
-    requiereReceta: { type: Boolean, default: false }
+    requiereReceta: { type: Boolean, default: false },
+    receta: { type: mongoose.Schema.Types.ObjectId, ref: 'Receta' } // receta que se surtió con esta partida
   },
   { _id: false }
 );

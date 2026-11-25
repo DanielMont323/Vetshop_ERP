@@ -32,7 +32,8 @@ const reglasPartidas = [
   body('partidas.*.producto').isMongoId().withMessage('Producto inválido'),
   body('partidas.*.cantidad').custom(entero(1)).withMessage('Cantidad: entero > 0 (piezas o gramos)'),
   body('partidas.*.descuentoPorcentaje').optional().custom(entero(0, 10000)).withMessage('Descuento %: puntos base de 0 a 10000'),
-  body('partidas.*.descuentoMonto').optional().custom(entero(0)).withMessage('Descuento: centavos enteros ≥ 0')
+  body('partidas.*.descuentoMonto').optional().custom(entero(0)).withMessage('Descuento: centavos enteros ≥ 0'),
+  body('partidas.*.receta').optional().isMongoId().withMessage('Receta inválida')
 ];
 const reglasAutorizacion = [
   body('autorizacion').optional().isObject(),

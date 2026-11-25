@@ -15,7 +15,8 @@ const ventaEnEsperaSchema = new mongoose.Schema(
         producto: { type: mongoose.Schema.Types.ObjectId, ref: 'Producto', required: true },
         cantidad: { type: Number, required: true, min: 1 },
         descuentoPorcentaje: { type: Number, min: 0, max: 10000 },
-        descuentoMonto: { type: Number, min: 0 }
+        descuentoMonto: { type: Number, min: 0 },
+        receta: { type: mongoose.Schema.Types.ObjectId, ref: 'Receta' }
       }
     ]
   },
