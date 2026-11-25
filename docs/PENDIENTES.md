@@ -33,10 +33,10 @@ Cosas detectadas y aceptadas por ahora, para resolver más adelante. Cada una in
   volver a cobrar.
 - **Opción:** devolución parcial con autorización (movimiento contrario de esas partidas y nota de crédito/reembolso).
 
-### Cancelar una venta de un turno ya cerrado
-- **Qué pasa:** la cancelación no revisa el turno (los turnos llegan en el Paso 7). Cancelar una venta de un corte ya
-  cerrado alteraría ese corte.
-- **Qué hacer en el Paso 7:** decidir si se permite (con registro en el turno actual) o se bloquea.
+### Tolerancia en el corte
+- **Qué pasa:** cualquier diferencia, aunque sea de $0.50, exige justificación y PIN del dueño para cerrar el turno.
+- **Opción:** si en la práctica resulta pesado, definir una tolerancia (p. ej. ±$5) que cierre sin autorización pero
+  quede registrada.
 
 ## Recetas
 
@@ -56,3 +56,6 @@ Cosas detectadas y aceptadas por ahora, para resolver más adelante. Cada una in
 
 - **Cambiar la unidad de un producto con existencias** (Paso 3): `productos.actualizar()` responde 409
   `UNIDAD_CON_INVENTARIO` si el producto tiene capas en cualquier sucursal.
+- **Cancelar una venta de un turno ya cerrado** (Paso 7): se permite con PIN del dueño; el dinero sale del turno
+  abierto de quien cancela (`cancelacion.turno`) y el corte cerrado no cambia. Si el turno de la venta está en corte,
+  no se puede cancelar hasta cerrarlo.

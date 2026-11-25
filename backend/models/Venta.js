@@ -85,8 +85,22 @@ const ventaSchema = new mongoose.Schema({
     usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
     autorizadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
     motivo: String,
-    fecha: Date
+    fecha: Date,
+    // Turno en el que se devolvió el dinero (si el turno de la venta ya estaba cerrado)
+    turno: { type: mongoose.Schema.Types.ObjectId, ref: 'Turno' }
   },
+  // Correcciones de forma de pago (solo con PIN del dueño y mientras el turno siga abierto)
+  cambiosFormaPago: [
+    {
+      _id: false,
+      antes: [pagoSchema],
+      cambioAntes: Number,
+      motivo: { type: String, required: true },
+      usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
+      autorizadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
+      fecha: { type: Date, required: true }
+    }
+  ],
   // Clave que manda la caja para que un reintento (doble clic, red lenta) no cobre dos veces
   claveOperacion: { type: String, required: true },
   fecha: { type: Date, required: true, default: Date.now }
@@ -108,13 +122,14 @@ for (const op of ['deleteOne', 'deleteMany', 'findOneAndDelete', 'replaceOne', '
   });
 }
 // Las únicas actualizaciones permitidas son las de la cancelación (estado y datos de cancelación)
-const CAMPOS_ACTUALIZABLES = new Set(['estado', 'cancelacion']);
+// Las únicas actualizaciones permitidas: cancelación y corrección autorizada de la forma de pago
+const CAMPOS_ACTUALIZABLES = new Set(['estado', 'cancelacion', 'pagos', 'cambio', 'cambiosFormaPago']);
 ventaSchema.pre(['updateOne', 'updateMany', 'findOneAndUpdate'], function () {
   const update = this.getUpdate() || {};
   if (Array.isArray(update)) throw new Error('Una venta cobrada no se puede modificar');
   const campos = Object.entries(update).flatMap(([k, v]) => (k.startsWith('$') ? Object.keys(v || {}) : [k]));
   if (campos.some(c => !CAMPOS_ACTUALIZABLES.has(c.split('.')[0]))) {
-    throw new Error('Una venta cobrada no se puede modificar (solo cancelar)');
+    throw new Error('Una venta cobrada no se puede modificar (solo cancelar o corregir la forma de pago)');
   }
 });
 

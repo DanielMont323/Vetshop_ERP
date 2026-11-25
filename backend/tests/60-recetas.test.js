@@ -38,6 +38,7 @@ beforeAll(async () => {
   for (const [p, precio] of [[antibiotico, 34900], [tramadol, 50000], [collar, 14900]]) {
     await precios.fijarPrecio({ clave: 'publico', productoId: p._id, precio }, dueno.usuario);
   }
+  await h.abrirTurno(cajero, A);
   await conTransaccion(async s => {
     const u = dueno.usuario._id;
     await inv.registrarEntrada({ sucursal: A._id, producto: antibiotico._id, cantidad: 5, costoUnitario: 20000, lote: 'L1', caducidad: '03/2027', origen: 'compra', usuario: u }, s);

@@ -111,6 +111,25 @@ router.get('/:id/ticket', puedeConsultar, validar([id, query('ancho').optional()
   res.type('html').send(htmlTicket(venta, { sucursal: sucursal?.nombre || '', ancho: req.datos.ancho || 80 }));
 });
 
+// POST /api/ventas/:id/forma-pago { pagos, motivo, autorizacion } — PIN del dueño; turno de la venta abierto
+router.post(
+  '/:id/forma-pago',
+  cobrar,
+  validar([
+    id,
+    body('pagos').isArray({ min: 1, max: 5 }).withMessage('Indica de 1 a 5 pagos'),
+    body('pagos.*.metodo').isIn(METODOS_PAGO).withMessage(`Método de pago inválido (${METODOS_PAGO.join(', ')})`),
+    body('pagos.*.monto').custom(entero(1)).withMessage('Monto: centavos enteros > 0'),
+    body('pagos.*.referencia').optional().isString().trim().isLength({ max: 40 }),
+    body('motivo').isString().trim().isLength({ min: 3, max: 300 }).withMessage('Indica el motivo de la corrección'),
+    body('autorizacion').isObject().withMessage('Falta la autorización del dueño'),
+    ...reglasAutorizacion
+  ]),
+  async (req, res) => {
+    res.json({ ok: true, datos: await ventas.cambiarFormaPago(req.alcance, req.user, req.datos.id, req.datos) });
+  }
+);
+
 // POST /api/ventas/:id/cancelar { motivo, autorizacion: { usuario, pin } } — PIN del dueño
 router.post(
   '/:id/cancelar',

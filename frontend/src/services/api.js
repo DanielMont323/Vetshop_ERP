@@ -168,3 +168,16 @@ export const recetasAPI = {
     api.put(`/recetas/${id}/archivo`, archivo, { headers: { 'Content-Type': archivo.type, 'X-Nombre-Archivo': encodeURIComponent(archivo.name) } }),
   archivo: id => api.get(`/recetas/${id}/archivo`, { responseType: 'blob' })
 };
+
+export const turnosAPI = {
+  actual: () => api.get('/turnos/actual'),
+  abrir: datos => api.post('/turnos', datos),
+  listar: params => api.get('/turnos', { params }),
+  obtener: id => api.get(`/turnos/${id}`),
+  retirar: (id, datos) => api.post(`/turnos/${id}/retiros`, datos),
+  contar: (id, datos) => api.post(`/turnos/${id}/conteo`, datos),
+  cerrar: (id, datos) => api.post(`/turnos/${id}/cerrar`, datos),
+  corte: (id, ancho = 80) => api.get(`/turnos/${id}/corte`, { params: { ancho }, responseType: 'text' })
+};
+
+ventasAPI.cambiarFormaPago = (id, datos) => api.post(`/ventas/${id}/forma-pago`, datos);

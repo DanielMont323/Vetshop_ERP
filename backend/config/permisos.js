@@ -30,6 +30,8 @@ const PERMISOS = [
   'autorizar:ajuste_inventario',
   'autorizar:cambio_forma_pago',
   'autorizar:diferencia_corte',
+  'autorizar:retiro_efectivo',
+  'turnos:ver_todos',
   // Administración
   'usuarios:gestionar',
   'sucursales:gestionar',

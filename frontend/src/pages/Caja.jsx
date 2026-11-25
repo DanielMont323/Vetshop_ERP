@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Clock, PauseCircle, Printer, ReceiptText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
-import { clientesAPI, mensajeDeError, productosAPI, ventasAPI } from '../services/api';
+import { clientesAPI, mensajeDeError, productosAPI, turnosAPI, ventasAPI } from '../services/api';
 import { baseATexto, cantidadABase, formatearDinero } from '../utils/formato';
 import { descuentoDe, imprimirTicket, importeBruto, nuevaClaveOperacion, porcentajeAPuntosBase, precioPara } from '../utils/caja';
 import BuscadorProducto from '../components/BuscadorProducto';
@@ -27,6 +27,7 @@ export default function Caja() {
   const [clave, setClave] = useState(nuevaClaveOperacion);
   const [ultima, setUltima] = useState(null);
   const [imprimir, setImprimir] = useState(true);
+  const [turno, setTurno] = useState(undefined); // undefined = cargando, null = sin turno
   const [eligiendoReceta, setEligiendoReceta] = useState(null); // clave de la línea que elige receta
 
   useEffect(() => {
@@ -35,6 +36,11 @@ export default function Caja() {
       setClienteId(id => id || r.data.datos[0]?.id || '');
     }).catch(e => toast.error(mensajeDeError(e, 'No se pudieron cargar los clientes')));
   }, []);
+
+  useEffect(() => {
+    turnosAPI.actual().then(r => setTurno(r.data.datos)).catch(() => setTurno(null));
+  }, [sucursalActiva]);
+  const turnoAbierto = turno?.estado === 'abierto';
 
   const cliente = clientes.find(c => c.id === clienteId);
   const lista = cliente?.listaPrecios || 'publico';
@@ -57,7 +63,7 @@ export default function Caja() {
   const lineaReceta = lineas.find(l => l.clave === eligiendoReceta);
   const total = calculos.reduce((s, c) => s + c.importe, 0);
   const descuentoTotal = calculos.reduce((s, c) => s + c.descuento, 0);
-  const listo = lineas.length > 0 && calculos.every(c => !c.error);
+  const listo = lineas.length > 0 && calculos.every(c => !c.error) && turnoAbierto;
 
   const agregar = useCallback(producto => {
     if (!producto.activo) return toast.error(`${producto.nombre} está desactivado`);
@@ -153,12 +159,13 @@ export default function Caja() {
       } else if (e.key === 'F12') {
         e.preventDefault();
         if (listo) setPanel('cobro');
+        else if (!turnoAbierto) toast.error('Abre tu turno de caja antes de cobrar');
         else if (lineas.length) toast.error('Revisa las partidas marcadas en rojo');
       }
     };
     window.addEventListener('keydown', teclas);
     return () => window.removeEventListener('keydown', teclas);
-  }, [panel, listo, lineas.length, eligiendoReceta]);
+  }, [panel, listo, lineas.length, eligiendoReceta, turnoAbierto]);
 
   return (
     <section className="grid lg:grid-cols-[1fr_20rem] gap-4 min-h-[calc(100vh-7rem)]">
@@ -178,6 +185,13 @@ export default function Caja() {
       </div>
 
       <aside className="space-y-4">
+        {turno !== undefined && !turnoAbierto && (
+          <div className="rounded-xl bg-amber-100 text-amber-900 p-4 text-sm space-y-1">
+            <p className="font-semibold">{turno?.estado === 'contado' ? 'Tu turno está en corte' : 'No tienes turno abierto'}</p>
+            <p>{turno?.estado === 'contado' ? 'Falta que el dueño autorice la diferencia para cerrarlo.' : 'Abre tu turno con el fondo de caja para poder cobrar.'}</p>
+            <Link to="/corte" className="underline font-medium">Ir a Turno y corte</Link>
+          </div>
+        )}
         <div className="bg-white rounded-xl shadow p-4 space-y-2">
           {descuentoTotal > 0 && (
             <>

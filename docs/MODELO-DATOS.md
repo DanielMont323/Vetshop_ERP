@@ -143,6 +143,30 @@ Decisiones del Paso 6:
   `vercel_blob` (pendiente de configurar). JPG, PNG o PDF, máx. 5 MB, con verificación de la firma de bytes.
 - Capturar y consultar: `recetas:capturar` (cajero, médico responsable, dueño). El almacén no ve recetas.
 
+Paso 7 (turnos y corte):
+
+| Colección | Campos clave | Índices |
+|---|---|---|
+| `Turno` | sucursal, caja, cajero(+nombre), estado, vigente, apertura{fecha, fondo, denominaciones[]}, ultimoMovimiento, retiros[{monto, motivo, usuario, autorizadoPor, fecha}], conteo{fecha, denominaciones[], contado, esperado, diferencias (por método), ventas, canceladas}, cierre{fecha, justificacion, autorizadoPor(+nombre)} | `{sucursal, caja}` y `{sucursal, cajero}` únicos si `vigente`, `{sucursal, createdAt}` |
+| `Venta` (cambios) | turno, caja (del turno), cancelacion.turno (devolución desde otro turno), cambiosFormaPago[{antes, cambioAntes, motivo, usuario, autorizadoPor, fecha}] | `{sucursal, turno}` |
+
+Decisiones del Paso 7:
+- **Turno obligatorio para cobrar** (409 `TURNO_REQUERIDO`). Un turno vigente por caja y por cajero en cada sucursal.
+  La venta toma la caja del turno.
+- **Esperado** = fondo + efectivo de las ventas cobradas (neto de cambio) − retiros − devoluciones; tarjeta y
+  transferencia = lo cobrado con ese método − devoluciones.
+- **Corte ciego:** el cajero captura billetes/monedas, el total de la terminal y las transferencias recibidas sin ver
+  lo esperado (el endpoint del turno abierto no lo devuelve al cajero). El conteo se registra **una sola vez**.
+  Si las tres formas de pago cuadran, el turno se cierra; si no, queda `contado` y se cierra con justificación +
+  PIN del dueño. **Sin tolerancia** por ahora.
+- Una venta y el conteo **no se cruzan**: ambas transacciones escriben el turno (`ultimoMovimiento`), así que Mongo
+  las serializa; una venta posterior al conteo se rechaza (`TURNO_EN_CORTE`).
+- **Retiros** de efectivo con PIN del dueño (`autorizar:retiro_efectivo`), nunca más de lo que hay en caja.
+- **Cambio de forma de pago** con PIN del dueño (`autorizar:cambio_forma_pago`), motivo, historial en la venta y
+  bitácora; solo mientras el turno de la venta siga abierto.
+- **Cancelar** una venta de un turno cerrado: el dinero sale del turno abierto de quien cancela.
+- El dueño ve lo esperado en vivo y todos los turnos (`turnos:ver_todos`); el cajero solo los suyos.
+
 Pasos siguientes (diseño acordado): ver la tabla del plan. Ajustes ya decididos:
 - `Venta.partidas[]` guarda copia de precio unitario, lista de precios, tasa de IVA y descuento.
 - `Receta.partidas[]`: producto, cantidad prescrita, cantidad entregada, lote.

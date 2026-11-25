@@ -1,6 +1,6 @@
 // Cálculos de VISTA PREVIA de la caja (mismas reglas que el servidor: centavos enteros, half-up).
 // El total que vale es el que devuelve el servidor al cobrar.
-import { ventasAPI } from '../services/api';
+import { turnosAPI, ventasAPI } from '../services/api';
 
 const dividir = (n, d) => Math.floor(n / d) + ((n % d) * 2 >= d ? 1 : 0);
 
@@ -30,9 +30,8 @@ export function descuentoDe(bruto, puntosBase) {
   return puntosBase ? dividir(bruto * puntosBase, 10000) : 0;
 }
 
-// Imprime el ticket de una venta en un iframe oculto (sin abrir ventanas emergentes)
-export async function imprimirTicket(ventaId, ancho = 80) {
-  const { data: html } = await ventasAPI.ticket(ventaId, ancho);
+// Imprime un HTML (ticket o corte) en un iframe oculto, sin abrir ventanas emergentes
+async function imprimirHtml(html) {
   const marco = document.createElement('iframe');
   marco.style.cssText = 'position:fixed;width:0;height:0;border:0;right:0;bottom:0';
   marco.setAttribute('sandbox', 'allow-modals allow-same-origin');
@@ -44,6 +43,16 @@ export async function imprimirTicket(ventaId, ancho = 80) {
   marco.contentWindow.focus();
   marco.contentWindow.print();
   setTimeout(() => marco.remove(), 60000);
+}
+
+export async function imprimirTicket(ventaId, ancho = 80) {
+  const { data } = await ventasAPI.ticket(ventaId, ancho);
+  await imprimirHtml(data);
+}
+
+export async function imprimirCorte(turnoId, ancho = 80) {
+  const { data } = await turnosAPI.corte(turnoId, ancho);
+  await imprimirHtml(data);
 }
 
 // Clave única por intento de cobro (si se reintenta, el servidor no cobra dos veces)
