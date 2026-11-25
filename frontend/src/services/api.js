@@ -8,7 +8,9 @@ export const CLAVE_SUCURSAL = 'vetshop.sucursal';
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
-  headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' }
+  // Sin Cache-Control aquí: el servidor ya responde con no-store, y un encabezado extra
+  // obligaría a permitirlo en CORS.
+  headers: { 'Content-Type': 'application/json' }
 });
 
 // Token y sucursal activa en cada petición. El servidor valida ambos: esto solo los envía.
@@ -76,3 +78,23 @@ export const mensajeDeError = (error, porDefecto = 'Ocurrió un error') =>
   error?.response?.data?.mensaje || (error?.code === 'ECONNABORTED' ? 'El servidor tardó demasiado' : porDefecto);
 
 export default api;
+
+export const authAPI = {
+  login: datos => api.post('/auth/login', datos),
+  perfil: () => api.get('/auth/me'),
+  cambiarPassword: datos => api.put('/auth/password', datos),
+  establecerPin: datos => api.put('/auth/pin', datos)
+};
+
+export const usuariosAPI = {
+  listar: params => api.get('/usuarios', { params }),
+  crear: datos => api.post('/usuarios', datos),
+  actualizar: (id, datos) => api.patch(`/usuarios/${id}`, datos),
+  restablecerPassword: (id, nueva) => api.put(`/usuarios/${id}/password`, { nueva })
+};
+
+export const sucursalesAPI = {
+  listar: params => api.get('/sucursales', { params }),
+  crear: datos => api.post('/sucursales', datos),
+  actualizar: (id, datos) => api.patch(`/sucursales/${id}`, datos)
+};
