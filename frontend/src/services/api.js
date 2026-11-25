@@ -98,3 +98,17 @@ export const sucursalesAPI = {
   crear: datos => api.post('/sucursales', datos),
   actualizar: (id, datos) => api.patch(`/sucursales/${id}`, datos)
 };
+
+export const productosAPI = {
+  buscar: params => api.get('/productos', { params }),
+  obtener: id => api.get(`/productos/${id}`),
+  porCodigo: codigo => api.get(`/productos/codigo/${encodeURIComponent(codigo)}`),
+  crear: datos => api.post('/productos', datos),
+  actualizar: (id, datos) => api.patch(`/productos/${id}`, datos)
+};
+
+export const listasPreciosAPI = {
+  listar: () => api.get('/listas-precios'),
+  fijar: (clave, productoId, precio) => api.put(`/listas-precios/${clave}/precios/${productoId}`, { precio }),
+  quitar: (clave, productoId) => api.delete(`/listas-precios/${clave}/precios/${productoId}`)
+};
