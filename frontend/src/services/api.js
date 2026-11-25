@@ -122,3 +122,18 @@ export const inventarioAPI = {
   movimientos: params => api.get('/inventario/movimientos', { params }),
   ajustar: datos => api.post('/inventario/ajustes', datos)
 };
+
+export const proveedoresAPI = {
+  listar: params => api.get('/proveedores', { params }),
+  crear: datos => api.post('/proveedores', datos),
+  actualizar: (id, datos) => api.patch(`/proveedores/${id}`, datos)
+};
+
+export const comprasAPI = {
+  listar: params => api.get('/compras', { params }),
+  obtener: id => api.get(`/compras/${id}`),
+  crear: datos => api.post('/compras', datos),
+  actualizar: (id, datos) => api.put(`/compras/${id}`, datos),
+  confirmar: id => api.post(`/compras/${id}/confirmar`),
+  cancelar: (id, motivo) => api.post(`/compras/${id}/cancelar`, { motivo })
+};

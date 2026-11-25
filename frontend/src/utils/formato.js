@@ -96,3 +96,20 @@ export const NOMBRES_MOTIVO = {
   merma: 'Merma', caducado: 'Caducado', danado: 'Dañado', conteo_fisico: 'Conteo físico',
   uso_interno: 'Uso interno', inventario_inicial: 'Inventario inicial', otro: 'Otro'
 };
+
+// Fecha de hoy en Tepic como AAAA-MM-DD (para campos <input type="date">)
+export function hoyLocal() {
+  const partes = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mazatlan', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  return partes; // en-CA ya da AAAA-MM-DD
+}
+
+// Instante → AAAA-MM-DD del día en Tepic
+export function diaLocalDe(fecha) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mazatlan', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(fecha));
+}
+
+export const NOMBRES_ESTADO_COMPRA = {
+  borrador: { texto: 'Borrador', clase: 'bg-slate-100 text-slate-700' },
+  recibida: { texto: 'Recibida', clase: 'bg-emerald-100 text-emerald-800' },
+  cancelada: { texto: 'Cancelada', clase: 'bg-red-100 text-red-800' }
+};
