@@ -63,6 +63,13 @@ async function sesion(opciones = {}) {
   return { usuario, token: res.body.datos.token };
 }
 
+// Abre el turno de caja de una sesión (desde el Paso 7, cobrar lo exige)
+async function abrirTurno(s, sucursal, { caja = 1, fondo = 0 } = {}) {
+  const res = await request(app).post('/api/turnos').set(auth(s.token, sucursal)).send({ caja, fondo });
+  if (res.status !== 201) throw new Error(`No se pudo abrir el turno: ${res.status} ${JSON.stringify(res.body)}`);
+  return res.body.datos;
+}
+
 const auth = (token, sucursal) => ({
   Authorization: `Bearer ${token}`,
   ...(sucursal && { 'X-Sucursal': String(sucursal._id || sucursal) })
@@ -70,6 +77,6 @@ const auth = (token, sucursal) => ({
 
 module.exports = {
   app, request, resetDb, cerrar, conectado, PASSWORD,
-  crearSucursal, crearUsuario, login, sesion, auth,
+  crearSucursal, crearUsuario, login, sesion, auth, abrirTurno,
   modelos: { Sucursal, Usuario, Auditoria, NotaPrueba }
 };

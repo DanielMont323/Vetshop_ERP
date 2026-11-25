@@ -45,6 +45,9 @@ beforeAll(async () => {
     await inv.registrarEntrada({ sucursal: A._id, producto: sinPrecio._id, cantidad: 5, costoUnitario: 2000, origen: 'compra', usuario: u }, s);
     await inv.registrarEntrada({ sucursal: B._id, producto: collar._id, cantidad: 5, costoUnitario: 7000, origen: 'compra', usuario: u }, s);
   });
+  await h.abrirTurno(cajero, A, { caja: 1 });
+  await h.abrirTurno(cajero2, A, { caja: 2 });
+  await h.abrirTurno(cajeroB, B, { caja: 1 });
   const res = await h.request(h.app).post('/api/clientes').set(h.auth(dueno.token)).send({ nombre: 'Clínica Patitas (prueba)', tipo: 'clinica', listaPrecios: 'mayoreo' });
   clinica = res.body.datos;
 });

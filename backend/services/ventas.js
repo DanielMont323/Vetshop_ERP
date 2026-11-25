@@ -19,6 +19,7 @@ const { resolverPrecio } = require('./precios');
 const { publicoGeneral } = require('./clientes');
 const inventario = require('./inventario');
 const recetas = require('./recetas');
+const turnos = require('./turnos');
 const { verificarPin } = require('./autorizaciones');
 const auditoria = require('./auditoria');
 
@@ -66,6 +67,7 @@ const publica = v => ({
   serie: v.serie,
   folio: v.folio,
   caja: v.caja,
+  turno: v.turno || null,
   cajero: { id: v.cajero, nombre: v.cajeroNombre },
   cliente: { id: v.cliente, nombre: v.clienteNombre },
   listaPrecios: v.listaPrecios,
@@ -79,6 +81,7 @@ const publica = v => ({
   cambio: v.cambio,
   estado: v.estado,
   cancelacion: v.estado === 'cancelada' ? v.cancelacion : null,
+  cambiosFormaPago: v.cambiosFormaPago || [],
   fecha: v.fecha
 });
 
@@ -113,6 +116,8 @@ async function cobrar(alcance, actor, datos, { verCostos = false } = {}) {
       const { cambio } = calcularPagos(sumas.total, datos.pagos);
       const ventaId = new mongoose.Types.ObjectId();
       const fecha = new Date();
+      // Toda venta pertenece al turno abierto de quien cobra (y la caja es la de ese turno)
+      const turno = await turnos.turnoParaVender(sucursal, actor._id, fecha, session);
 
       const consumo = await inventario.consumirFefo(
         {
@@ -144,7 +149,7 @@ async function cobrar(alcance, actor, datos, { verCostos = false } = {}) {
       const [nueva] = await Venta.create(
         [{
           _id: ventaId, sucursal, serie: SERIE_VENTA, folio,
-          caja: datos.caja || 1, cajero: actor._id, cajeroNombre: actor.nombre,
+          caja: turno.caja, turno: turno._id, cajero: actor._id, cajeroNombre: actor.nombre,
           cliente: cliente._id, clienteNombre: cliente.nombre, listaPrecios: cliente.listaPrecios,
           partidas, ...sumas, costo: partidas.reduce((s, p) => s + p.costo, 0),
           pagos: datos.pagos, cambio, autorizacionDescuento: autorizador?.id,
@@ -219,16 +224,17 @@ async function cancelar(alcance, actor, id, { motivo, autorizacion }) {
   const autorizador = await verificarPin({ ...autorizacion, permiso: 'autorizar:cancelacion', sucursal });
   return conTransaccion(async session => {
     const fecha = new Date();
+    const actual = await Venta.findOne(filtroEscritura(alcance, { _id: aId(id) })).session(session).lean();
+    if (!actual) throw noEncontrado('Venta no encontrada');
+    if (actual.estado !== 'cobrada') throw conflicto('La venta ya está cancelada', 'VENTA_CANCELADA');
+    // De qué caja sale el dinero: del turno de la venta si sigue abierto, o del turno abierto de quien cancela
+    const { turnoDevolucion } = await turnos.turnoParaCancelar(actual, actor._id, fecha, session);
     const venta = await Venta.findOneAndUpdate(
-      filtroEscritura(alcance, { _id: aId(id), estado: 'cobrada' }),
-      { $set: { estado: 'cancelada', cancelacion: { usuario: actor._id, autorizadoPor: autorizador.id, motivo, fecha } } },
+      { _id: actual._id, sucursal: actual.sucursal, estado: 'cobrada' },
+      { $set: { estado: 'cancelada', cancelacion: { usuario: actor._id, autorizadoPor: autorizador.id, motivo, fecha, ...(turnoDevolucion && { turno: turnoDevolucion }) } } },
       { new: true, session }
     );
-    if (!venta) {
-      const existe = await Venta.findOne(filtroEscritura(alcance, { _id: aId(id) })).session(session).lean();
-      if (!existe) throw noEncontrado('Venta no encontrada');
-      throw conflicto('La venta ya está cancelada', 'VENTA_CANCELADA');
-    }
+    if (!venta) throw conflicto('La venta ya está cancelada', 'VENTA_CANCELADA');
     await inventario.revertirSalidas({ sucursal, referenciaId: venta._id, usuario: actor._id, nota: `Cancelación venta ${venta.serie}-${venta.folio}: ${motivo}`, autorizadoPor: autorizador.id, fecha }, session);
     // Lo surtido de recetas vuelve a quedar pendiente
     await recetas.revertirEnVenta({ sucursal, ventaId: venta._id }, session);
@@ -261,4 +267,35 @@ async function eliminarEspera(alcance, id) {
   if (r.deletedCount === 0) throw noEncontrado('Venta en espera no encontrada');
 }
 
-module.exports = { cobrar, obtener, listar, cancelar, guardarEspera, listarEspera, eliminarEspera, SERIE_VENTA };
+// Corregir la forma de pago (p. ej. se registró efectivo y era tarjeta): PIN del dueño, motivo,
+// y solo mientras el turno de la venta siga abierto. Queda el historial en la venta y en la bitácora.
+async function cambiarFormaPago(alcance, actor, id, { pagos, motivo, autorizacion }) {
+  const sucursal = sucursalDeEscritura(alcance);
+  const autorizador = await verificarPin({ ...autorizacion, permiso: 'autorizar:cambio_forma_pago', sucursal });
+  return conTransaccion(async session => {
+    const fecha = new Date();
+    const venta = await Venta.findOne(filtroEscritura(alcance, { _id: aId(id) })).session(session).lean();
+    if (!venta) throw noEncontrado('Venta no encontrada');
+    if (venta.estado !== 'cobrada') throw conflicto('La venta está cancelada', 'VENTA_CANCELADA');
+    await turnos.exigirTurnoAbiertoDeVenta(venta, fecha, session);
+    const { cambio } = calcularPagos(venta.total, pagos);
+    const actualizada = await Venta.findOneAndUpdate(
+      { _id: venta._id, sucursal: venta.sucursal, estado: 'cobrada' },
+      {
+        $set: { pagos, cambio },
+        $push: { cambiosFormaPago: { antes: venta.pagos, cambioAntes: venta.cambio, motivo, usuario: actor._id, autorizadoPor: autorizador.id, fecha } }
+      },
+      { new: true, session }
+    ).lean();
+    await auditoria.registrar(
+      {
+        usuario: actor._id, autorizadoPor: autorizador.id, accion: 'venta.cambiar_forma_pago', entidad: 'Venta', entidadId: venta._id, sucursal, motivo,
+        antes: { pagos: venta.pagos, cambio: venta.cambio }, despues: { pagos, cambio }
+      },
+      session
+    );
+    return publica(actualizada);
+  });
+}
+
+module.exports = { cobrar, obtener, listar, cancelar, cambiarFormaPago, guardarEspera, listarEspera, eliminarEspera, SERIE_VENTA };
