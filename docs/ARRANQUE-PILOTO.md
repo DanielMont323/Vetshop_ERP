@@ -7,7 +7,7 @@ Responsable técnico: Ulises. Dueño: Carlos.
 
 Revisa `docs/PENDIENTES.md`. Para el piloto conviene resolver o aceptar explícitamente:
 
-- [ ] **Fotos de recetas en producción** (Vercel Blob): sin esto, en Vercel no se guardan los archivos de recetas.
+- [x] **Fotos de recetas y XML en producción**: Vercel Blob privado `vetshop-archivos` conectado a `vetshop-api`.
   Mientras no esté, no adjuntes archivos (los controlados no se podrán validar).
 - [ ] Mensaje de cuenta bloqueada que revela si el usuario existe (riesgo bajo; decidir antes de enero).
 - [ ] Devolución de compras a proveedor y devoluciones parciales de ventas (hoy: ajuste de inventario o cancelar y volver a cobrar).
@@ -19,15 +19,20 @@ Revisa `docs/PENDIENTES.md`. Para el piloto conviene resolver o aceptar explíci
   - Usuario de base de datos con permiso solo sobre `vetshop`; contraseña larga.
   - Acceso de red: las IP de Vercel (o 0.0.0.0/0 con usuario y contraseña fuertes).
   - Activar los **respaldos** automáticos de Atlas y anotar cómo restaurar.
-- [ ] **Vercel – backend** (carpeta `backend/`): variables `MONGODB_URI`, `JWT_SECRET` (aleatorio de 48+ bytes),
+- [x] **Vercel – backend** (`vetshop-api` → https://vetshop-api.vercel.app) (carpeta `backend/`): variables `MONGODB_URI`, `JWT_SECRET` (aleatorio de 48+ bytes),
   `CORS_ORIGINS` (la URL del frontend), `FRONTEND_URL` (se imprime en el ticket para la autofactura),
   `NODE_ENV=production`, y las de almacenamiento cuando se configure Blob.
 - [ ] **Facturación**: mientras no se pruebe Facturapi, `FACTURACION_PAC=simulado` (facturas sin validez fiscal).
   Para timbrar: `FACTURACION_PAC=facturapi` y `FACTURAPI_KEY` (primero la de pruebas). Ver `docs/PENDIENTES.md`.
-- [ ] **Vercel – frontend** (carpeta `frontend/`): variable `VITE_API_URL` = URL del backend + `/api`.
+- [x] **Vercel – frontend** (`vetshop-web` → https://vetshop-web.vercel.app) (carpeta `frontend/`): variable `VITE_API_URL` = URL del backend + `/api`.
 - [x] Crear la base `vetshop` con sus colecciones e índices: `npm run preparar-bd` (desde `backend/`, con `.env` apuntando
   a Atlas). Repetirlo después de cada actualización que agregue índices.
-- [ ] Abrir `https://<backend>/api/salud` y ver `{"ok":true}`.
+- [x] Abrir `https://<backend>/api/salud` y ver `{"ok":true}`.
+- [x] Atlas → Network Access con `0.0.0.0/0` (Vercel no tiene IPs fijas; exige contraseña fuerte en la base).
+- [ ] Hoy la app publicada usa la base **`vetshop-demo`** (pruebas con usuarios). Para el arranque: cambiar
+  `MONGODB_URI` en Vercel a `vetshop`, crear el primer dueño y cargar el catálogo; volver a publicar.
+- Los dos proyectos están conectados a GitHub (carpeta raíz `backend` / `frontend`): cada merge a `main` publica a
+  producción y cada PR tiene su vista previa.
 
 ## 3. Datos iniciales
 

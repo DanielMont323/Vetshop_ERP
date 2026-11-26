@@ -8,13 +8,20 @@ const { autenticar } = require('./middleware/auth');
 const { scopeSucursal } = require('./middleware/scopeSucursal');
 
 // CORS: solo los orígenes de CORS_ORIGINS (separados por comas) pueden llamar desde un navegador.
+// Un origen puede llevar UN «*» en el nombre del subdominio para aceptar las direcciones de cada despliegue
+// y vista previa de Vercel, p. ej. https://vetshop-*-noctra15.vercel.app («*» = letras, números y guiones).
 // Las peticiones sin Origin (curl, scripts, pruebas) no pasan por CORS: las protege el token.
+function patronOrigen(texto) {
+  const escapado = texto.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace('*', '[a-z0-9-]+');
+  return new RegExp(`^${escapado}$`, 'i');
+}
+
 function opcionesCors() {
-  const permitidos = (process.env.CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+  const permitidos = (process.env.CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean).map(patronOrigen);
   return {
     origin(origin, callback) {
       if (!origin) return callback(null, true);
-      callback(null, permitidos.includes(origin));
+      callback(null, permitidos.some(p => p.test(origin)));
     },
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Sucursal', 'X-Nombre-Archivo'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],

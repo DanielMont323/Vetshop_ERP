@@ -1,0 +1,5 @@
+.vercel
+.env*
+
+# Plantilla de variables (sí se sube)
+!.env.example
