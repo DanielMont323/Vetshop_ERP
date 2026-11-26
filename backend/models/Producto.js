@@ -53,6 +53,9 @@ const productoSchema = new mongoose.Schema(
     categoria: { type: String, enum: { values: CATEGORIAS, message: 'Categoría inválida' }, required: true },
     unidad: { type: String, enum: { values: UNIDADES, message: 'Unidad inválida (pieza o kg)' }, required: true },
     presentacion: { type: String, trim: true, maxlength: 80 },
+    // Facturación: clave de producto/servicio y clave de unidad del SAT (sin clave: 01010101 y H87/KGM)
+    claveSat: { type: String, trim: true, match: [/^\d{8}$/, 'Clave SAT: 8 dígitos'] },
+    claveUnidadSat: { type: String, trim: true, uppercase: true, match: [/^[A-Z0-9]{2,3}$/, 'Clave de unidad SAT inválida'] },
     requiereReceta: { type: Boolean, default: false },
     esControlado: { type: Boolean, default: false },
     requiereRefrigeracion: { type: Boolean, default: false },
@@ -71,6 +74,8 @@ productoSchema.index({ categoria: 1, activo: 1 });
 productoSchema.pre('validate', function () {
   if (this.isModified('nombre') || !this.nombreBusqueda) this.nombreBusqueda = normalizar(this.nombre);
   if (this.codigoBarras === '') this.codigoBarras = undefined;
+  if (this.claveSat === '') this.claveSat = undefined;
+  if (this.claveUnidadSat === '') this.claveUnidadSat = undefined;
   // Un medicamento controlado siempre exige receta
   if (this.esControlado) this.requiereReceta = true;
 });

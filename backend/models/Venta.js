@@ -86,6 +86,8 @@ const ventaSchema = new mongoose.Schema({
   autorizacionDescuento: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
   // Quién autorizó vender a crédito por encima del límite o con saldo vencido
   autorizacionCredito: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
+  // Factura (CFDI) que incluye esta venta: a cliente, global o autofactura. Una venta facturada no entra en otra.
+  factura: { type: mongoose.Schema.Types.ObjectId, ref: 'Factura', default: null },
   estado: { type: String, enum: ['cobrada', 'cancelada'], default: 'cobrada' },
   cancelacion: {
     usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
@@ -117,6 +119,7 @@ ventaSchema.index({ sucursal: 1, claveOperacion: 1 }, { unique: true });
 ventaSchema.index({ sucursal: 1, fecha: -1 });
 ventaSchema.index({ sucursal: 1, cajero: 1, fecha: -1 });
 ventaSchema.index({ sucursal: 1, turno: 1 });
+ventaSchema.index({ sucursal: 1, factura: 1, fecha: -1 });
 
 // Inmutable salvo la cancelación, que se hace con updateOne filtrando estado 'cobrada'
 ventaSchema.pre('save', function () {
@@ -129,7 +132,7 @@ for (const op of ['deleteOne', 'deleteMany', 'findOneAndDelete', 'replaceOne', '
 }
 // Las únicas actualizaciones permitidas son las de la cancelación (estado y datos de cancelación)
 // Las únicas actualizaciones permitidas: cancelación y corrección autorizada de la forma de pago
-const CAMPOS_ACTUALIZABLES = new Set(['estado', 'cancelacion', 'pagos', 'cambio', 'cambiosFormaPago']);
+const CAMPOS_ACTUALIZABLES = new Set(['estado', 'cancelacion', 'pagos', 'cambio', 'cambiosFormaPago', 'factura']);
 ventaSchema.pre(['updateOne', 'updateMany', 'findOneAndUpdate'], function () {
   const update = this.getUpdate() || {};
   if (Array.isArray(update)) throw new Error('Una venta cobrada no se puede modificar');

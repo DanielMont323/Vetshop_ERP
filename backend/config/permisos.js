@@ -48,6 +48,9 @@ const PERMISOS = [
   'clientes:gestionar',
   'cuentas_pagar:gestionar',
   'metas:gestionar',
+  // Facturación (CFDI)
+  'facturacion:emitir',
+  'facturacion:cancelar',
   'auditoria:ver',
   'reportes:ver'
 ];
@@ -55,7 +58,7 @@ const PERMISOS = [
 const MATRIZ = {
   cajero: [
     'ventas:cobrar', 'ventas:ver_propias_del_dia', 'existencias:ver', 'corte:capturar_conteo', 'catalogo:ver', 'recetas:capturar',
-    'credito:vender', 'cobranza:registrar_abono', 'cadena_frio:capturar'
+    'credito:vender', 'cobranza:registrar_abono', 'cadena_frio:capturar', 'facturacion:emitir'
   ],
   almacen: [
     'inventario:entradas',

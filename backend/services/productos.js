@@ -12,7 +12,7 @@ const { tieneInventario } = require('./inventario');
 
 const CAMPOS_EDITABLES = [
   'sku', 'codigoBarras', 'nombre', 'categoria', 'unidad', 'presentacion',
-  'requiereReceta', 'esControlado', 'requiereRefrigeracion', 'iva', 'activo', 'minimos'
+  'requiereReceta', 'esControlado', 'requiereRefrigeracion', 'iva', 'activo', 'minimos', 'claveSat', 'claveUnidadSat'
 ];
 const LIMITE_MAXIMO = 100;
 
@@ -25,6 +25,8 @@ function publico(p, preciosProducto = {}) {
     categoria: p.categoria,
     unidad: p.unidad,
     presentacion: p.presentacion || '',
+    claveSat: p.claveSat || '',
+    claveUnidadSat: p.claveUnidadSat || '',
     requiereReceta: p.requiereReceta,
     esControlado: p.esControlado,
     requiereRefrigeracion: p.requiereRefrigeracion,

@@ -87,6 +87,7 @@ const publica = v => ({
   cancelacion: v.estado === 'cancelada' ? v.cancelacion : null,
   cambiosFormaPago: v.cambiosFormaPago || [],
   aCredito: (v.pagos || []).filter(p => p.metodo === 'credito').reduce((s, p) => s + p.monto, 0),
+  factura: v.factura || null,
   fecha: v.fecha
 });
 
@@ -266,6 +267,7 @@ async function cancelar(alcance, actor, id, { motivo, autorizacion }) {
     const actual = await Venta.findOne(filtroEscritura(alcance, { _id: aId(id) })).session(session).lean();
     if (!actual) throw noEncontrado('Venta no encontrada');
     if (actual.estado !== 'cobrada') throw conflicto('La venta ya está cancelada', 'VENTA_CANCELADA');
+    if (actual.factura) throw conflicto('La venta está facturada: cancela primero su factura (CFDI)', 'VENTA_FACTURADA');
     // De qué caja sale el dinero: del turno de la venta si sigue abierto, o del turno abierto de quien cancela
     const { turnoDevolucion } = await turnos.turnoParaCancelar(actual, actor._id, fecha, session);
     const venta = await Venta.findOneAndUpdate(

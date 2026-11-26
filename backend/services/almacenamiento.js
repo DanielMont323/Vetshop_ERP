@@ -70,8 +70,16 @@ async function guardar(buffer, { tipo, nombre, prefijo = 'recetas' }) {
   return { clave, nombre: String(nombre || `archivo.${extension}`).slice(0, 120), tipo, tamano: buffer.length };
 }
 
+// Documentos que genera el propio sistema (XML timbrado): no pasan por la validación de archivos subidos
+const EXTENSIONES_GENERADAS = new Set(['xml']);
+async function guardarGenerado(contenido, { extension, prefijo }) {
+  if (!EXTENSIONES_GENERADAS.has(extension)) throw new Error(`Extensión no permitida: ${extension}`);
+  const buffer = Buffer.isBuffer(contenido) ? contenido : Buffer.from(String(contenido), 'utf8');
+  return driver().guardar(buffer, { extension, prefijo });
+}
+
 async function leer(clave) {
   return driver().leer(clave);
 }
 
-module.exports = { guardar, leer, validarArchivo, TIPOS, TAMANO_MAXIMO };
+module.exports = { guardar, guardarGenerado, leer, validarArchivo, TIPOS, TAMANO_MAXIMO };
