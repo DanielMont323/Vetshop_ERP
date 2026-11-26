@@ -40,13 +40,6 @@ Cosas detectadas y aceptadas por ahora, para resolver más adelante. Cada una in
 
 ## Recetas
 
-### Almacenamiento de archivos en producción
-- **Qué pasa:** el driver `vercel_blob` de `services/almacenamiento.js` aún no está implementado. En Vercel el disco
-  no es persistente, así que en producción hay que configurarlo antes de capturar recetas con archivo.
-- **Qué hacer:** crear un almacén Blob en Vercel (privado), poner `BLOB_READ_WRITE_TOKEN` y `ALMACENAMIENTO=vercel_blob`,
-  e implementar `guardar`/`leer` con `@vercel/blob`. (Alternativa: Cloudinary con acceso autenticado.)
-- **Decidir antes de:** el piloto de diciembre.
-
 ### Vigencia de las recetas
 - **Qué pasa:** una receta validada se puede surtir sin límite de tiempo.
 - **Opción:** fijar una vigencia (p. ej. 30 días desde la fecha de la receta, o la que marque la norma para
@@ -63,11 +56,6 @@ Cosas detectadas y aceptadas por ahora, para resolver más adelante. Cada una in
   complemento de pago, cancelación y descarga del PDF. Después cargar el CSD real y cambiar a la clave de producción.
 - **Decidir antes de:** facturar en enero.
 
-### XML de las facturas en producción
-- **Qué pasa:** el XML timbrado se guarda con el mismo almacenamiento que los archivos de recetas. En Vercel el disco
-  no es persistente: hace falta el driver de Vercel Blob (ver «Almacenamiento de archivos en producción»).
-- **Además:** con Facturapi el XML y el PDF también quedan en su plataforma.
-
 ### Envío por correo y complementos automáticos
 - **Qué pasa:** la factura no se envía por correo (el cliente la descarga o se le comparte el archivo). El complemento
   de pago de una factura PPD se emite a mano desde la factura cuando el cliente paga (no se genera solo al registrar
@@ -80,6 +68,9 @@ Cosas detectadas y aceptadas por ahora, para resolver más adelante. Cada una in
   acepta pero no es lo recomendable. Conviene capturar la clave de cada producto (se puede hacer con la importación).
 
 ## Resueltos
+
+- **Almacenamiento de archivos en producción** (recetas y XML de facturas): driver `vercel_blob` con acceso privado;
+  almacén `vetshop-archivos` conectado al proyecto `vetshop-api` (`BLOB_READ_WRITE_TOKEN`, `ALMACENAMIENTO=vercel_blob`).
 
 - **Cambiar la unidad de un producto con existencias** (Paso 3): `productos.actualizar()` responde 409
   `UNIDAD_CON_INVENTARIO` si el producto tiene capas en cualquier sucursal.
