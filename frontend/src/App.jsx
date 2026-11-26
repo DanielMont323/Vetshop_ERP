@@ -17,6 +17,7 @@ import Corte from './pages/Corte';
 import Traspasos from './pages/Traspasos';
 import Dashboard from './pages/Dashboard';
 import Reportes from './pages/Reportes';
+import Cobranza from './pages/Cobranza';
 
 function Inicio() {
   const { usuario, sucursalActiva, puede } = useAuth();
@@ -51,6 +52,7 @@ export default function App() {
             <Route path="/corte" element={<Corte />} />
             <Route path="/traspasos" element={<Traspasos />} />
             <Route path="/reportes" element={<Reportes />} />
+            <Route path="/cobranza" element={<Cobranza />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

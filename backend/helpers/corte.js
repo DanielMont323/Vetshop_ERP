@@ -46,6 +46,7 @@ function htmlCorte(turno, { sucursal, ancho = 80 } = {}) {
   <div class="f"><span>Conteo</span><span>${formatearLocal(c.fecha, 'dd/MM/yyyy HH:mm')}</span></div>
   <div class="f"><span>Fondo inicial</span><span>${formatear(turno.apertura.fondo)}</span></div>
   <div class="f"><span>Ventas</span><span>${c.ventas} (canceladas: ${c.canceladas})</span></div>
+  ${c.abonos ? `<div class="f"><span>Abonos de clientes</span><span>${c.abonos}</span></div>` : ''}
   ${retiros ? `<hr><div class="b">Retiros</div>${retiros}` : ''}
   <hr>
   ${filas}

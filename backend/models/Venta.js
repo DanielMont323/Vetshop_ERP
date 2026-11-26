@@ -7,7 +7,8 @@
 const mongoose = require('mongoose');
 const { alcanceSucursal } = require('./plugins/alcanceSucursal');
 
-const METODOS_PAGO = ['efectivo', 'tarjeta', 'transferencia'];
+// 'credito': la parte que queda a cuenta del cliente (genera un CargoCliente). No es dinero en la caja.
+const METODOS_PAGO = ['efectivo', 'tarjeta', 'transferencia', 'credito'];
 const centavos = (requerido = true) => ({
   type: Number,
   required: requerido,
@@ -80,6 +81,8 @@ const ventaSchema = new mongoose.Schema({
   pagos: { type: [pagoSchema], validate: { validator: l => l.length > 0, message: 'La venta no tiene pagos' } },
   cambio: centavos(), // se entrega en efectivo
   autorizacionDescuento: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
+  // Quién autorizó vender a crédito por encima del límite o con saldo vencido
+  autorizacionCredito: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
   estado: { type: String, enum: ['cobrada', 'cancelada'], default: 'cobrada' },
   cancelacion: {
     usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },

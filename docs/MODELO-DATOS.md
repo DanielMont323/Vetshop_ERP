@@ -198,6 +198,24 @@ Paso 9 (dashboard y reportes) — no agrega colecciones; agrega sobre `Venta`, `
   formato de moneda; fechas en hora de Tepic.
 - Permiso `reportes:ver` (dueño). Rango máximo de 3 años por consulta.
 
+### Crédito y cobranza (Fase 2, Paso 11)
+
+- **`Cliente.credito`**: `activo`, `limite` (centavos), `dias` (plazo, 30 por defecto), `bonificacionProntoPago`
+  (puntos base) y `diasProntoPago` (8 por defecto). Solo el dueño lo configura. "Público en general" no puede tener crédito.
+- **`CargoCliente`** (`cargos_clientes`): la parte a crédito de una venta (`Venta.pagos[].metodo = 'credito'`).
+  Copia las condiciones de pronto pago al vender. `saldo = importe − abonado − bonificado`; estado
+  `pendiente → pagado | cancelado`. Vence al terminar el día `fecha + dias` (hora de Tepic).
+- **`AbonoCliente`** (`abonos_clientes`): folio `A` por sucursal, forma de pago, `aplicaciones[]` (cargo, monto,
+  bonificación), `turno` donde entró el dinero. Idempotente con `claveOperacion`.
+- La **cuenta es del cliente** (global, como `Cliente`): se paga en cualquier sucursal, por eso estas dos colecciones
+  no llevan el plugin de alcance y todo se filtra por cliente. El **dinero** sí es de la sucursal y del turno.
+- Reglas: vender a crédito por encima del límite o con saldo vencido pide PIN del dueño
+  (`autorizar:credito_excedido`). Si un abono liquida un cargo dentro del plazo de pronto pago, se aplica la
+  bonificación (queda en bitácora). No se guardan saldos a favor. Una venta con abonos no se cancela; un abono se
+  cancela con PIN mientras su turno siga abierto. Una venta con parte a crédito no admite corrección de forma de pago.
+- **Corte**: la parte a crédito no es dinero (no entra); los abonos del turno sí (por forma de pago).
+- Serialización: cada venta a crédito y cada abono escribe `cliente.credito.ultimoMovimiento` en su transacción.
+
 Pasos siguientes (diseño acordado): ver la tabla del plan. Ajustes ya decididos:
 - `Venta.partidas[]` guarda copia de precio unitario, lista de precios, tasa de IVA y descuento.
 - `Receta.partidas[]`: producto, cantidad prescrita, cantidad entregada, lote.

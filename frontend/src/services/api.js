@@ -192,6 +192,16 @@ export const traspasosAPI = {
   cancelar: (id, motivo) => api.post(`/traspasos/${id}/cancelar`, { motivo })
 };
 
+export const cobranzaAPI = {
+  cartera: params => api.get('/cobranza/cartera', { params }),
+  carteraExcel: () => api.get('/cobranza/cartera/excel', { responseType: 'blob', timeout: 60000 }),
+  estadoCuenta: (clienteId, params) => api.get(`/cobranza/clientes/${clienteId}`, { params }),
+  impresion: (clienteId, params) => api.get(`/cobranza/clientes/${clienteId}/impresion`, { params, responseType: 'text' }),
+  abonar: datos => api.post('/cobranza/abonos', datos),
+  cancelarAbono: (id, datos) => api.post(`/cobranza/abonos/${id}/cancelar`, datos),
+  comprobante: (id, ancho = 80) => api.get(`/cobranza/abonos/${id}/comprobante`, { params: { ancho }, responseType: 'text' })
+};
+
 export const reportesAPI = {
   dashboard: () => api.get('/reportes/dashboard'),
   ventas: params => api.get('/reportes/ventas', { params }),

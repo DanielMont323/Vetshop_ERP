@@ -83,7 +83,8 @@ describe('reporte de ventas', () => {
     expect(d.formasPago).toEqual([
       { metodo: 'efectivo', ventas: 2, monto: 20000 - 8400 + 5800 },
       { metodo: 'tarjeta', ventas: 1, monto: 5000 },
-      { metodo: 'transferencia', ventas: 0, monto: 0 }
+      { metodo: 'transferencia', ventas: 0, monto: 0 },
+      { metodo: 'credito', ventas: 0, monto: 0 }
     ]);
   });
 
