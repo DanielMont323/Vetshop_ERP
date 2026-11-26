@@ -1,8 +1,11 @@
 // Turnos de caja y corte ciego.
 //
-//   esperado.efectivo      = fondo + Σ efectivo de las ventas cobradas − Σ cambio − retiros − devoluciones en efectivo
-//   esperado.tarjeta       = Σ tarjeta de las ventas cobradas − devoluciones con tarjeta
-//   esperado.transferencia = Σ transferencia de las ventas cobradas − devoluciones por transferencia
+//   esperado.efectivo      = fondo + Σ efectivo de las ventas cobradas − Σ cambio + abonos en efectivo − retiros − devoluciones en efectivo
+//   esperado.tarjeta       = Σ tarjeta de las ventas cobradas + abonos con tarjeta − devoluciones con tarjeta
+//   esperado.transferencia = Σ transferencia de las ventas cobradas + abonos por transferencia − devoluciones por transferencia
+//
+// La parte a CRÉDITO de una venta no es dinero: no entra al corte (queda en la cuenta del cliente).
+// Los abonos de clientes recibidos en el turno sí entran.
 //
 // "Devoluciones" = ventas de turnos YA CERRADOS que se cancelaron mientras este turno estaba abierto
 // (el dinero sale de esta caja). Las ventas canceladas del propio turno simplemente no cuentan.
@@ -17,6 +20,7 @@ const { rangoDias, diaLocal } = require('../helpers/fechas');
 const { sumar } = require('../helpers/dinero');
 const { verificarPin } = require('./autorizaciones');
 const auditoria = require('./auditoria');
+const AbonoCliente = require('../models/AbonoCliente');
 
 const METODOS = ['efectivo', 'tarjeta', 'transferencia'];
 const aId = id => new mongoose.Types.ObjectId(String(id));
@@ -36,28 +40,33 @@ function totalDenominaciones(denominaciones = []) {
 function sumarPagos(ventas) {
   const r = { efectivo: 0, tarjeta: 0, transferencia: 0 };
   for (const v of ventas) {
-    for (const p of v.pagos) r[p.metodo] += p.monto;
+    for (const p of v.pagos) if (p.metodo in r) r[p.metodo] += p.monto;
     r.efectivo -= v.cambio || 0;
   }
   return r;
 }
 
 async function esperadoDe(turno, session) {
-  const [cobradas, canceladasPropias, devoluciones] = await Promise.all([
+  const [cobradas, canceladasPropias, devoluciones, abonos] = await Promise.all([
     Venta.find({ sucursal: turno.sucursal, turno: turno._id, estado: 'cobrada' }).select('pagos cambio').session(session || null).lean(),
     Venta.countDocuments({ sucursal: turno.sucursal, turno: turno._id, estado: 'cancelada' }).session(session || null),
-    Venta.find({ sucursal: turno.sucursal, 'cancelacion.turno': turno._id }).select('pagos cambio').session(session || null).lean()
+    Venta.find({ sucursal: turno.sucursal, 'cancelacion.turno': turno._id }).select('pagos cambio').session(session || null).lean(),
+    AbonoCliente.find({ turno: turno._id, estado: 'aplicado' }).select('metodo monto').session(session || null).lean()
   ]);
+  const porAbonos = { efectivo: 0, tarjeta: 0, transferencia: 0 };
+  for (const a of abonos) porAbonos[a.metodo] += a.monto;
   const ingresos = sumarPagos(cobradas);
   const salidas = sumarPagos(devoluciones);
   const retiros = sumar((turno.retiros || []).map(r => r.monto));
   return {
     esperado: {
-      efectivo: turno.apertura.fondo + ingresos.efectivo - salidas.efectivo - retiros,
-      tarjeta: ingresos.tarjeta - salidas.tarjeta,
-      transferencia: ingresos.transferencia - salidas.transferencia
+      efectivo: turno.apertura.fondo + ingresos.efectivo + porAbonos.efectivo - salidas.efectivo - retiros,
+      tarjeta: ingresos.tarjeta + porAbonos.tarjeta - salidas.tarjeta,
+      transferencia: ingresos.transferencia + porAbonos.transferencia - salidas.transferencia
     },
     ventas: cobradas.length,
+    abonos: abonos.length,
+    abonosPorMetodo: porAbonos,
     canceladas: canceladasPropias,
     devoluciones: devoluciones.length,
     retiros
@@ -156,7 +165,7 @@ async function registrarConteo(alcance, actor, id, { denominaciones, tarjeta, tr
     const cuadra = METODOS.every(m => diferencias[m] === 0);
     const ahora = new Date();
     const cambios = {
-      conteo: { fecha: ahora, denominaciones, contado, esperado: calculo.esperado, diferencias, ventas: calculo.ventas, canceladas: calculo.canceladas },
+      conteo: { fecha: ahora, denominaciones, contado, esperado: calculo.esperado, diferencias, ventas: calculo.ventas, canceladas: calculo.canceladas, abonos: calculo.abonos },
       estado: cuadra ? 'cerrado' : 'contado',
       ultimoMovimiento: ahora,
       ...(cuadra && { vigente: false, cierre: { fecha: ahora } })

@@ -111,7 +111,16 @@ function diasParaCaducar(caducidad, ahora = new Date()) {
   return Math.round((Date.UTC(c.anio, c.mes - 1, c.dia) - Date.UTC(a.anio, a.mes - 1, a.dia)) / 86400000);
 }
 
+// Último instante (23:59:59.999 en Tepic) del día que cae `dias` días de calendario después de `fecha`.
+// Se usa para vencimientos: «a 30 días» vence al terminar el día 30.
+function finDeDiaTras(fecha, dias) {
+  if (!Number.isSafeInteger(dias) || dias < 0) throw solicitudInvalida('Días inválidos');
+  const { anio, mes, dia } = partesYmd(diaLocal(fecha));
+  const d = new Date(Date.UTC(anio, mes - 1, dia + dias));
+  return deHoraLocal(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), 23, 59, 59, 999);
+}
+
 module.exports = {
   ZONA, deHoraLocal, diaLocal, rangoDia, rangoDias, formatearLocal,
-  parsearCaducidad, estaCaducado, diasParaCaducar
+  parsearCaducidad, estaCaducado, diasParaCaducar, finDeDiaTras
 };

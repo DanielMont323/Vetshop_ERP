@@ -6,8 +6,11 @@ test('los 4 roles del plan', () => {
   expect([...ROLES].sort()).toEqual(['almacen', 'cajero', 'dueno', 'medico_responsable']);
 });
 
-test('cajero: vender, ver sus ventas del día, ver existencias, capturar conteo de corte, ver catálogo, capturar recetas', () => {
-  expect([...MATRIZ.cajero].sort()).toEqual(['catalogo:ver', 'corte:capturar_conteo', 'existencias:ver', 'recetas:capturar', 'ventas:cobrar', 'ventas:ver_propias_del_dia']);
+test('cajero: vender (también a crédito), recibir abonos, ver sus ventas del día, existencias, conteo de corte, catálogo, recetas', () => {
+  expect([...MATRIZ.cajero].sort()).toEqual([
+    'catalogo:ver', 'cobranza:registrar_abono', 'corte:capturar_conteo', 'credito:vender', 'existencias:ver', 'recetas:capturar',
+    'ventas:cobrar', 'ventas:ver_propias_del_dia'
+  ]);
 });
 
 test('almacén: entradas/salidas, recepción, traspasos, conteo físico (y ver existencias)', () => {

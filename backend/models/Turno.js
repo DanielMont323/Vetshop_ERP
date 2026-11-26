@@ -61,7 +61,8 @@ const turnoSchema = new mongoose.Schema(
       esperado: porMetodo,
       diferencias: porMetodo, // contado − esperado (+ sobrante, − faltante)
       ventas: Number,
-      canceladas: Number
+      canceladas: Number,
+      abonos: Number // abonos de clientes recibidos en el turno
     },
     cierre: {
       fecha: Date,

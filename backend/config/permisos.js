@@ -12,6 +12,10 @@ const PERMISOS = [
   'ventas:ver_propias_del_dia',
   'ventas:ver_todas',
   'corte:capturar_conteo',
+  // Crédito y cobranza
+  'credito:vender',
+  'cobranza:registrar_abono',
+  'cobranza:ver',
   // Catálogo (productos y listas de precios)
   'catalogo:ver',
   // Inventario
@@ -31,6 +35,7 @@ const PERMISOS = [
   'autorizar:cambio_forma_pago',
   'autorizar:diferencia_corte',
   'autorizar:retiro_efectivo',
+  'autorizar:credito_excedido',
   'turnos:ver_todos',
   // Administración
   'usuarios:gestionar',
@@ -42,7 +47,10 @@ const PERMISOS = [
 ];
 
 const MATRIZ = {
-  cajero: ['ventas:cobrar', 'ventas:ver_propias_del_dia', 'existencias:ver', 'corte:capturar_conteo', 'catalogo:ver', 'recetas:capturar'],
+  cajero: [
+    'ventas:cobrar', 'ventas:ver_propias_del_dia', 'existencias:ver', 'corte:capturar_conteo', 'catalogo:ver', 'recetas:capturar',
+    'credito:vender', 'cobranza:registrar_abono'
+  ],
   almacen: [
     'inventario:entradas',
     'inventario:salidas',

@@ -82,14 +82,14 @@ async function porCajero(alcance, r) {
   return filas.map(({ _id, ...f }) => ({ cajero: _id, ...conMargen(f) }));
 }
 
-// Lo cobrado por forma de pago (el efectivo ya sin el cambio entregado)
+// Lo cobrado por forma de pago (el efectivo ya sin el cambio entregado). «credito» = lo que quedó a cuenta del cliente.
 async function porFormaPago(alcance, r) {
   const [pagos, cambio] = await Promise.all([
     Venta.aggregate([matchVentas(alcance, r), { $unwind: '$pagos' }, { $group: { _id: '$pagos.metodo', monto: { $sum: '$pagos.monto' }, ventas: { $sum: 1 } } }]),
     Venta.aggregate([matchVentas(alcance, r), { $group: { _id: null, cambio: { $sum: '$cambio' } } }])
   ]);
   const porMetodo = Object.fromEntries(pagos.map(p => [p._id, p]));
-  return ['efectivo', 'tarjeta', 'transferencia'].map(metodo => ({
+  return ['efectivo', 'tarjeta', 'transferencia', 'credito'].map(metodo => ({
     metodo,
     ventas: porMetodo[metodo]?.ventas || 0,
     monto: (porMetodo[metodo]?.monto || 0) - (metodo === 'efectivo' ? cambio[0]?.cambio || 0 : 0)

@@ -55,7 +55,10 @@ router.post(
     body('pagos.*.metodo').isIn(METODOS_PAGO).withMessage(`Método de pago inválido (${METODOS_PAGO.join(', ')})`),
     body('pagos.*.monto').custom(entero(1)).withMessage('Monto: centavos enteros > 0'),
     body('pagos.*.referencia').optional().isString().trim().isLength({ max: 40 }),
-    ...reglasAutorizacion
+    ...reglasAutorizacion,
+    body('autorizacionCredito').optional().isObject(),
+    body('autorizacionCredito.usuario').if(body('autorizacionCredito').exists()).isString().trim().notEmpty().withMessage('Falta el usuario que autoriza el crédito'),
+    body('autorizacionCredito.pin').if(body('autorizacionCredito').exists()).isString().notEmpty().withMessage('Falta el PIN')
   ]),
   async (req, res) => {
     const { venta, repetida } = await ventas.cobrar(req.alcance, req.user, req.datos, vision(req));

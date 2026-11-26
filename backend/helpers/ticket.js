@@ -7,7 +7,7 @@ const { formatearLocal } = require('./fechas');
 const escapar = texto =>
   String(texto ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-const METODOS = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia' };
+const METODOS = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', credito: 'A crédito' };
 const NEGOCIO = 'Huellitas Vetshop';
 
 function cantidadTexto(p) {
@@ -64,8 +64,47 @@ function htmlTicket(venta, { sucursal, ancho = 80 } = {}) {
   ${pagos}
   ${venta.cambio > 0 ? `<div class="f t"><span>Cambio</span><span>${formatear(venta.cambio)}</span></div>` : ''}
   <hr>
+  ${venta.aCredito > 0 ? `<div class="centro">Firma de conformidad (crédito):</div><br><div class="centro">______________________</div><hr>` : ''}
   <div class="centro">¡Gracias por su compra!</div>
 </body></html>`;
 }
 
-module.exports = { htmlTicket, escapar };
+// Comprobante de abono de un cliente (misma impresora térmica)
+function htmlAbono(abono, { sucursal, saldo, ancho = 80 } = {}) {
+  const mm = ancho === 58 ? 58 : 80;
+  const filas = abono.aplicaciones
+    .map(a => `<div class="f"><span>${escapar(a.folio)}</span><span>${formatear(a.monto)}</span></div>${a.bonificacion > 0 ? `<div class="d">Bonificación pronto pago −${formatear(a.bonificacion)}</div>` : ''}`)
+    .join('');
+  return `<!doctype html>
+<html lang="es-MX"><head><meta charset="utf-8"><title>Abono ${escapar(abono.serie)}-${abono.folio}</title>
+<style>
+  @page { size: ${mm}mm auto; margin: 0; }
+  body { width: ${mm}mm; margin: 0; padding: 2mm 3mm; font: ${mm === 58 ? 10 : 12}px/1.3 monospace; color: #000; }
+  h1 { font-size: 1.2em; text-align: center; margin: 0; }
+  .centro { text-align: center; } .f { display: flex; justify-content: space-between; gap: 4px; } .d { text-align: right; }
+  .t { font-weight: bold; font-size: 1.15em; } .c { text-align: center; font-weight: bold; margin: 4px 0; }
+  hr { border: 0; border-top: 1px dashed #000; margin: 4px 0; }
+</style></head>
+<body>
+  <h1>${NEGOCIO}</h1>
+  <div class="centro">${escapar(sucursal)}</div>
+  <div class="centro">Comprobante de abono</div>
+  <hr>
+  <div class="f"><span>Folio</span><span>${escapar(abono.serie)}-${abono.folio}</span></div>
+  <div class="f"><span>Fecha</span><span>${formatearLocal(abono.fecha, 'dd/MM/yyyy HH:mm')}</span></div>
+  <div class="f"><span>Recibió</span><span>${escapar(abono.usuario.nombre)}</span></div>
+  <div class="f"><span>Cliente</span><span>${escapar(abono.cliente.nombre)}</span></div>
+  ${abono.estado === 'cancelado' ? '<div class="c">*** CANCELADO ***</div>' : ''}
+  <hr>
+  <div class="b">Aplicado a</div>
+  ${filas}
+  <hr>
+  <div class="f t"><span>ABONO</span><span>${formatear(abono.monto)}</span></div>
+  <div class="f"><span>${METODOS[abono.metodo]}</span><span>${escapar(abono.referencia)}</span></div>
+  ${saldo !== undefined ? `<div class="f"><span>Saldo pendiente</span><span>${formatear(saldo)}</span></div>` : ''}
+  <hr>
+  <div class="centro">¡Gracias por su pago!</div>
+</body></html>`;
+}
+
+module.exports = { htmlTicket, htmlAbono, escapar };

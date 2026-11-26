@@ -12,7 +12,7 @@ const Cliente = require('../models/Cliente');
 const { siguienteFolio } = require('../models/Contador');
 const { conTransaccion } = require('../helpers/transaccion');
 const { conAlcance, sucursalDeEscritura } = require('../helpers/alcance');
-const { solicitudInvalida, noEncontrado, conflicto, ErrorApp } = require('../helpers/errores');
+const { solicitudInvalida, noEncontrado, conflicto, sinPermiso, ErrorApp } = require('../helpers/errores');
 const { rangoDia, rangoDias, diaLocal } = require('../helpers/fechas');
 const { calcularPartida, totales, calcularPagos } = require('./calculoVenta');
 const { resolverPrecio } = require('./precios');
@@ -22,6 +22,8 @@ const recetas = require('./recetas');
 const turnos = require('./turnos');
 const { verificarPin } = require('./autorizaciones');
 const auditoria = require('./auditoria');
+const credito = require('./credito');
+const { tienePermiso } = require('../config/permisos');
 
 const SERIE_VENTA = 'V';
 const MAX_PARTIDAS = 100;
@@ -82,6 +84,7 @@ const publica = v => ({
   estado: v.estado,
   cancelacion: v.estado === 'cancelada' ? v.cancelacion : null,
   cambiosFormaPago: v.cambiosFormaPago || [],
+  aCredito: (v.pagos || []).filter(p => p.metodo === 'credito').reduce((s, p) => s + p.monto, 0),
   fecha: v.fecha
 });
 
@@ -106,6 +109,20 @@ async function cobrar(alcance, actor, datos, { verCostos = false } = {}) {
   if (partidasPrevias.some(p => p.descuento > 0)) {
     if (!datos.autorizacion?.usuario) throw new ErrorApp(403, 'Los descuentos requieren autorización del dueño (usuario y PIN)', 'AUTORIZACION_REQUERIDA');
     autorizador = await verificarPin({ ...datos.autorizacion, permiso: 'autorizar:descuento', sucursal });
+  }
+
+  // Parte a crédito: el cliente debe tenerlo; si rebasa el límite o tiene saldo vencido, PIN del dueño
+  const montoCredito = (datos.pagos || []).filter(p => p.metodo === 'credito').reduce((s, p) => s + p.monto, 0);
+  let autorizadorCredito = null;
+  if (montoCredito > 0) {
+    if (!tienePermiso(actor.rol, 'credito:vender')) throw sinPermiso('No tienes permiso para vender a crédito');
+    const ev = await credito.evaluar(clientePrevio, montoCredito);
+    if (ev.requiereAutorizacion) {
+      if (!datos.autorizacionCredito?.usuario) {
+        throw new ErrorApp(409, `${clientePrevio.nombre} ${ev.motivo}: se requiere autorización del dueño`, 'CREDITO_REQUIERE_AUTORIZACION', ev.resumen);
+      }
+      autorizadorCredito = await verificarPin({ ...datos.autorizacionCredito, permiso: 'autorizar:credito_excedido', sucursal });
+    }
   }
 
   try {
@@ -134,6 +151,13 @@ async function cobrar(alcance, actor, datos, { verCostos = false } = {}) {
 
       const folio = await siguienteFolio(sucursal, SERIE_VENTA, session);
 
+      if (montoCredito > 0) {
+        await credito.cargarEnVenta(
+          { cliente, sucursal, ventaId, folio: `${SERIE_VENTA}-${folio}`, importe: montoCredito, fecha, autorizado: Boolean(autorizadorCredito) },
+          session
+        );
+      }
+
       // Recetas: suma lo entregado (≤ prescrito) con los lotes que salieron
       const entregas = partidas
         .filter(p => p.receta)
@@ -152,7 +176,7 @@ async function cobrar(alcance, actor, datos, { verCostos = false } = {}) {
           caja: turno.caja, turno: turno._id, cajero: actor._id, cajeroNombre: actor.nombre,
           cliente: cliente._id, clienteNombre: cliente.nombre, listaPrecios: cliente.listaPrecios,
           partidas, ...sumas, costo: partidas.reduce((s, p) => s + p.costo, 0),
-          pagos: datos.pagos, cambio, autorizacionDescuento: autorizador?.id,
+          pagos: datos.pagos, cambio, autorizacionDescuento: autorizador?.id, autorizacionCredito: autorizadorCredito?.id,
           claveOperacion: datos.claveOperacion, fecha
         }],
         { session }
@@ -162,6 +186,15 @@ async function cobrar(alcance, actor, datos, { verCostos = false } = {}) {
           {
             usuario: actor._id, autorizadoPor: autorizador.id, accion: 'venta.descuento', entidad: 'Venta', entidadId: ventaId, sucursal,
             despues: { folio: nueva.folio, descuento: sumas.descuento, partidas: partidas.filter(p => p.descuento > 0).map(p => ({ sku: p.sku, descuento: p.descuento })) }
+          },
+          session
+        );
+      }
+      if (autorizadorCredito) {
+        await auditoria.registrar(
+          {
+            usuario: actor._id, autorizadoPor: autorizadorCredito.id, accion: 'venta.credito_excedido', entidad: 'Venta', entidadId: ventaId, sucursal,
+            despues: { folio: nueva.folio, cliente: cliente.nombre, aCredito: montoCredito }
           },
           session
         );
@@ -235,6 +268,8 @@ async function cancelar(alcance, actor, id, { motivo, autorizacion }) {
       { new: true, session }
     );
     if (!venta) throw conflicto('La venta ya está cancelada', 'VENTA_CANCELADA');
+    // La parte a crédito: se cancela su cargo (si ya tiene abonos, la venta no se puede cancelar)
+    if (venta.pagos.some(p => p.metodo === 'credito')) await credito.cancelarEnVenta({ ventaId: venta._id, usuario: actor._id, fecha }, session);
     await inventario.revertirSalidas({ sucursal, referenciaId: venta._id, usuario: actor._id, nota: `Cancelación venta ${venta.serie}-${venta.folio}: ${motivo}`, autorizadoPor: autorizador.id, fecha }, session);
     // Lo surtido de recetas vuelve a quedar pendiente
     await recetas.revertirEnVenta({ sucursal, ventaId: venta._id }, session);
@@ -277,6 +312,9 @@ async function cambiarFormaPago(alcance, actor, id, { pagos, motivo, autorizacio
     const venta = await Venta.findOne(filtroEscritura(alcance, { _id: aId(id) })).session(session).lean();
     if (!venta) throw noEncontrado('Venta no encontrada');
     if (venta.estado !== 'cobrada') throw conflicto('La venta está cancelada', 'VENTA_CANCELADA');
+    if ([...venta.pagos, ...pagos].some(p => p.metodo === 'credito')) {
+      throw conflicto('Una venta con parte a crédito no se corrige: cancélala y vuelve a cobrarla', 'VENTA_A_CREDITO');
+    }
     await turnos.exigirTurnoAbiertoDeVenta(venta, fecha, session);
     const { cambio } = calcularPagos(venta.total, pagos);
     const actualizada = await Venta.findOneAndUpdate(
