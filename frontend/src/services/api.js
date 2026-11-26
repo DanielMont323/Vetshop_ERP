@@ -210,6 +210,17 @@ export const cuentasPagarAPI = {
   cancelarPago: (id, datos) => api.post(`/cuentas-por-pagar/pagos/${id}/cancelar`, datos)
 };
 
+export const conteosAPI = {
+  listar: params => api.get('/conteos', { params }),
+  obtener: id => api.get(`/conteos/${id}`),
+  iniciar: datos => api.post('/conteos', datos),
+  capturar: (id, datos) => api.post(`/conteos/${id}/capturas`, datos),
+  revision: id => api.post(`/conteos/${id}/revision`),
+  recaptura: id => api.post(`/conteos/${id}/recaptura`),
+  aplicar: (id, datos) => api.post(`/conteos/${id}/aplicar`, datos),
+  cancelar: (id, datos) => api.post(`/conteos/${id}/cancelar`, datos)
+};
+
 export const reportesAPI = {
   dashboard: () => api.get('/reportes/dashboard'),
   ventas: params => api.get('/reportes/ventas', { params }),

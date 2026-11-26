@@ -228,6 +228,22 @@ Paso 9 (dashboard y reportes) — no agrega colecciones; agrega sobre `Venta`, `
 - Tablero: facturas vencidas y por vencer en 7 días. `npm run preparar-bd` crea las cuentas de compras que se
   recibieron antes del módulo.
 
+### Conteo físico (Fase 2, Paso 13)
+
+- **`ConteoFisico`** (`conteos_fisicos`, por sucursal, con plugin de alcance): folio `CF` por sucursal, categorías
+  (vacío = todo), estado `en_captura → en_revision → aplicado | cancelado`, `abierto` (índice único parcial: un
+  conteo abierto por sucursal).
+- `renglones[]`: uno por lote (capa) con existencia al iniciar (incluidos caducados): producto, lote, caducidad,
+  costo, `esperado` (foto), `contado`, `esperadoCaptura` (lo que marcaba el sistema al capturar), y al aplicar
+  `esperadoFinal` y `diferencia`.
+- Captura **ciega** (nadie ve lo esperado en captura; en revisión solo `conteo_fisico:aplicar`). Modos sumar y recontar.
+- Diferencia = contado − esperadoCaptura: lo vendido después de contar un lote no aparece como faltante.
+- Aplicar (PIN del dueño, `autorizar:ajuste_inventario`): faltante → salida de ese lote (hasta lo que quede);
+  sobrante → entrada al mismo lote y costo; motivo `conteo_fisico`, referencia al conteo. Los no contados solo se
+  toman como cero si se indica.
+- Con un conteo abierto se bloquean los ajustes manuales de la sucursal (`CONTEO_EN_CURSO`). Tablero: sucursales
+  activas sin conteo aplicado en 7 días.
+
 Pasos siguientes (diseño acordado): ver la tabla del plan. Ajustes ya decididos:
 - `Venta.partidas[]` guarda copia de precio unitario, lista de precios, tasa de IVA y descuento.
 - `Receta.partidas[]`: producto, cantidad prescrita, cantidad entregada, lote.
