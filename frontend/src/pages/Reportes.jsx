@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FileSpreadsheet } from 'lucide-react';
+import { FileSpreadsheet, Target } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { mensajeDeError, reportesAPI } from '../services/api';
@@ -90,6 +91,7 @@ export default function Reportes() {
       {/* Filtros en una sola fila, arriba de todo */}
       <div className="flex flex-wrap items-end gap-3">
         <h2 className="text-lg font-semibold mr-auto">Reportes de ventas</h2>
+        <Link to="/metas" className="flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm hover:bg-slate-50"><Target size={16} aria-hidden="true" /> Metas</Link>
         <label className="text-sm">Desde<input type="date" className="block rounded-lg border border-slate-300 px-2 py-1.5" value={desde} max={hasta} onChange={e => setDesde(e.target.value)} /></label>
         <label className="text-sm">Hasta<input type="date" className="block rounded-lg border border-slate-300 px-2 py-1.5" value={hasta} min={desde} max={hoyLocal()} onChange={e => setHasta(e.target.value)} /></label>
         <label className="text-sm">Agrupar por

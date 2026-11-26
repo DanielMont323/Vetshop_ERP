@@ -232,6 +232,13 @@ export const cadenaFrioAPI = {
   bitacoraExcel: params => api.get('/cadena-frio/bitacora.xlsx', { params, responseType: 'blob', timeout: 60000 })
 };
 
+export const metasAPI = {
+  avance: params => api.get('/metas', { params }),
+  fijar: (datos, config) => api.put('/metas', datos, config),
+  miAvance: () => api.get('/metas/mi-avance'),
+  vendedores: config => api.get('/metas/vendedores', config)
+};
+
 export const reportesAPI = {
   dashboard: () => api.get('/reportes/dashboard'),
   ventas: params => api.get('/reportes/ventas', { params }),

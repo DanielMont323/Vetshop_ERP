@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Clock, PauseCircle, Printer, ReceiptText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
-import { clientesAPI, mensajeDeError, productosAPI, turnosAPI, ventasAPI } from '../services/api';
+import { clientesAPI, mensajeDeError, metasAPI, productosAPI, turnosAPI, ventasAPI } from '../services/api';
 import { baseATexto, cantidadABase, formatearDinero } from '../utils/formato';
 import { descuentoDe, imprimirTicket, importeBruto, nuevaClaveOperacion, porcentajeAPuntosBase, precioPara } from '../utils/caja';
 import BuscadorProducto from '../components/BuscadorProducto';
@@ -19,10 +19,12 @@ const enfocar = id => setTimeout(() => document.getElementById(id)?.focus(), 0);
 // Pantalla de caja: lector de código de barras, F2 buscar, F12 cobrar.
 export default function Caja() {
   const { pedirTexto } = useDialogo();
-  const { sucursalActiva } = useAuth();
+  const { sucursalActiva, usuario } = useAuth();
   const [clientes, setClientes] = useState([]);
   const [clienteId, setClienteId] = useState('');
   const [creditoPendiente, setCreditoPendiente] = useState(null);
+  const [vendedores, setVendedores] = useState([]);
+  const [vendedorId, setVendedorId] = useState('');
   const [lineas, setLineas] = useState([]);
   const [esperaId, setEsperaId] = useState(null);
   const [cobrando, setCobrando] = useState(false);
@@ -42,6 +44,8 @@ export default function Caja() {
 
   useEffect(() => {
     turnosAPI.actual().then(r => setTurno(r.data.datos)).catch(() => setTurno(null));
+    metasAPI.vendedores().then(r => setVendedores(r.data.datos)).catch(() => setVendedores([]));
+    setVendedorId('');
   }, [sucursalActiva]);
   const turnoAbierto = turno?.estado === 'abierto';
 
@@ -108,7 +112,8 @@ export default function Caja() {
       const esPublico = clientes[0]?.id === clienteId;
       const r = await ventasAPI.cobrar({
         claveOperacion: clave, cliente: esPublico ? undefined : clienteId, partidas: partidasApi(), pagos,
-        ...(autorizacion && { autorizacion }), ...(autorizacionCredito && { autorizacionCredito }), ...(esperaId && { esperaId })
+        ...(autorizacion && { autorizacion }), ...(autorizacionCredito && { autorizacionCredito }), ...(esperaId && { esperaId }),
+        ...(vendedorId && { vendedor: vendedorId })
       });
       const venta = r.data.datos;
       setUltima(venta);
@@ -184,6 +189,15 @@ export default function Caja() {
               {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}{c.listaPrecios !== 'publico' ? ` (${c.listaPrecios})` : ''}</option>)}
             </select>
           </label>
+          {vendedores.length > 1 && (
+            <label className="flex items-center gap-2 text-sm">
+              Vendedor
+              <select className="rounded-lg border border-slate-300 px-2 py-2" value={vendedorId} onChange={e => setVendedorId(e.target.value)}>
+                <option value="">Yo ({usuario.nombre})</option>
+                {vendedores.filter(v => v.id !== usuario.id).map(v => <option key={v.id} value={v.id}>{v.nombre}</option>)}
+              </select>
+            </label>
+          )}
         </div>
         <div className="flex-1 overflow-y-auto">
           <Carrito lineas={lineas} calculos={calculos} alCambiar={cambiar} alQuitar={quitar} alElegirReceta={setEligiendoReceta} />
