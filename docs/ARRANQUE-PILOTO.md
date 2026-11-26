@@ -20,7 +20,10 @@ Revisa `docs/PENDIENTES.md`. Para el piloto conviene resolver o aceptar explíci
   - Acceso de red: las IP de Vercel (o 0.0.0.0/0 con usuario y contraseña fuertes).
   - Activar los **respaldos** automáticos de Atlas y anotar cómo restaurar.
 - [ ] **Vercel – backend** (carpeta `backend/`): variables `MONGODB_URI`, `JWT_SECRET` (aleatorio de 48+ bytes),
-  `CORS_ORIGINS` (la URL del frontend), `NODE_ENV=production`, y las de almacenamiento cuando se configure Blob.
+  `CORS_ORIGINS` (la URL del frontend), `FRONTEND_URL` (se imprime en el ticket para la autofactura),
+  `NODE_ENV=production`, y las de almacenamiento cuando se configure Blob.
+- [ ] **Facturación**: mientras no se pruebe Facturapi, `FACTURACION_PAC=simulado` (facturas sin validez fiscal).
+  Para timbrar: `FACTURACION_PAC=facturapi` y `FACTURAPI_KEY` (primero la de pruebas). Ver `docs/PENDIENTES.md`.
 - [ ] **Vercel – frontend** (carpeta `frontend/`): variable `VITE_API_URL` = URL del backend + `/api`.
 - [x] Crear la base `vetshop` con sus colecciones e índices: `npm run preparar-bd` (desde `backend/`, con `.env` apuntando
   a Atlas). Repetirlo después de cada actualización que agregue índices.
@@ -45,7 +48,10 @@ Revisa `docs/PENDIENTES.md`. Para el piloto conviene resolver o aceptar explíci
   5. Verificar en **Existencias** de la sucursal: totales contra el conteo, y alertas de caducados (darlos de baja
      con un ajuste de salida «Caducado»).
 - [ ] **Precios**: revisar en **Listas de precios** que todos los productos activos tengan precio de público.
-- [ ] **Clientes** de distribución con su lista de precios (en la importación o en Administración → Clientes).
+- [ ] **Clientes** de distribución con su lista de precios (en la importación o en Administración → Clientes),
+  sus **datos fiscales** y, si compran a crédito, su límite y plazo.
+- [ ] **Equipos de frío** de cada sucursal (Frío → Nuevo equipo) y **metas** del mes (Reportes → Metas).
+- [ ] Mínimos y máximos de los productos principales (para las compras sugeridas).
 
 ## 4. Equipo de la caja
 

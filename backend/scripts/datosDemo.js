@@ -1,5 +1,6 @@
 // Datos de DEMOSTRACIÓN (todo inventado, marcado "(prueba)"): sucursales, usuarios, catálogo con
-// precios, inventario inicial (con un lote caducado y uno por caducar), proveedores y clientes.
+// precios, inventario inicial (con un lote caducado y uno por caducar), proveedores y clientes, y los datos
+// de la Fase 2 (datosDemoFase2.js): ventas, crédito, cuentas por pagar, cadena de frío, metas y una factura.
 // Lo usan dev:memoria (Mongo en memoria) y seed-demo (una base de demostración vacía).
 const Sucursal = require('../models/Sucursal');
 const Usuario = require('../models/Usuario');
@@ -10,6 +11,7 @@ const Cliente = require('../models/Cliente');
 const inv = require('../services/inventario');
 const { conTransaccion } = require('../helpers/transaccion');
 const { formatearLocal } = require('../helpers/fechas');
+const { sembrarFase2 } = require('./datosDemoFase2');
 
 const CATALOGO = [
   { sku: 'CRQ-AD-20', codigoBarras: '7500000000011', nombre: 'Croquetas Perro Adulto (prueba)', categoria: 'alimento', unidad: 'pieza', presentacion: 'Costal 20 kg', iva: 'tasa_0', precios: { publico: 129900, mayoreo: 115000, clinica: 112000 } },
@@ -32,6 +34,7 @@ async function sembrar({ password, pinDueno, pinMedico }) {
   const usuarios = [
     { nombre: 'Dueño Demo', usuario: 'dueno.demo', rol: 'dueno', sucursales: [], pin: pinDueno },
     { nombre: 'Cajero Centro', usuario: 'cajero.centro', rol: 'cajero', sucursales: [centro._id] },
+    { nombre: 'Cajero Norte', usuario: 'cajero.norte', rol: 'cajero', sucursales: [norte._id] },
     { nombre: 'Almacén Demo', usuario: 'almacen.demo', rol: 'almacen', sucursales: [almacen._id, centro._id, norte._id] },
     { nombre: 'Médico Demo', usuario: 'medico.demo', rol: 'medico_responsable', sucursales: [centro._id], pin: pinMedico }
   ];
@@ -93,6 +96,7 @@ async function sembrar({ password, pinDueno, pinMedico }) {
     { nombre: 'Clínica Patitas (prueba)', tipo: 'clinica', listaPrecios: 'clinica' },
     { nombre: 'Estética Peludos (prueba)', tipo: 'estetica', listaPrecios: 'mayoreo' }
   ]);
+  await sembrarFase2({ centro, norte, almacen, productos, pinDueno, pinMedico });
   return usuarios.map(u => u.usuario);
 }
 

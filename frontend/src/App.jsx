@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DialogoProvider } from './contexts/DialogoContext';
 import Layout from './components/Layout';
+import Protegida from './components/Protegida';
 import Login from './pages/Login';
 import CambiarPassword, { MiPin } from './pages/CambiarPassword';
 import Administracion from './pages/Administracion';
@@ -52,25 +53,25 @@ export default function App() {
           <Route element={<Layout />}>
             <Route path="/" element={<Inicio />} />
             <Route path="/cambiar-password" element={<><CambiarPassword /><MiPin /></>} />
-            <Route path="/administracion" element={<Administracion />} />
+            <Route path="/administracion" element={<Protegida permisos={['usuarios:gestionar','sucursales:gestionar','clientes:gestionar']}><Administracion /></Protegida>} />
             <Route path="/productos" element={<Productos />} />
             <Route path="/listas-precios" element={<ListasPrecios />} />
-            <Route path="/existencias" element={<Existencias />} />
-            <Route path="/compras" element={<Compras />} />
-            <Route path="/proveedores" element={<Proveedores />} />
-            <Route path="/caja" element={<Caja />} />
-            <Route path="/ventas" element={<VentasDia />} />
-            <Route path="/recetas" element={<Recetas />} />
-            <Route path="/corte" element={<Corte />} />
-            <Route path="/traspasos" element={<Traspasos />} />
-            <Route path="/reportes" element={<Reportes />} />
-            <Route path="/cobranza" element={<Cobranza />} />
-            <Route path="/cuentas-por-pagar" element={<CuentasPorPagar />} />
-            <Route path="/conteos" element={<Conteos />} />
-            <Route path="/cadena-frio" element={<CadenaFrio />} />
-            <Route path="/compras-sugeridas" element={<ComprasSugeridas />} />
-            <Route path="/metas" element={<Metas />} />
-            <Route path="/facturas" element={<Facturas />} />
+            <Route path="/existencias" element={<Protegida permisos={['existencias:ver']}><Existencias /></Protegida>} />
+            <Route path="/compras" element={<Protegida permisos={['recepcion:registrar']}><Compras /></Protegida>} />
+            <Route path="/proveedores" element={<Protegida permisos={['recepcion:registrar']}><Proveedores /></Protegida>} />
+            <Route path="/caja" element={<Protegida permisos={['ventas:cobrar']}><Caja /></Protegida>} />
+            <Route path="/ventas" element={<Protegida permisos={['ventas:ver_todas','ventas:ver_propias_del_dia']}><VentasDia /></Protegida>} />
+            <Route path="/recetas" element={<Protegida permisos={['recetas:capturar']}><Recetas /></Protegida>} />
+            <Route path="/corte" element={<Protegida permisos={['corte:capturar_conteo','turnos:ver_todos']}><Corte /></Protegida>} />
+            <Route path="/traspasos" element={<Protegida permisos={['traspasos:gestionar']}><Traspasos /></Protegida>} />
+            <Route path="/reportes" element={<Protegida permisos={['reportes:ver']}><Reportes /></Protegida>} />
+            <Route path="/cobranza" element={<Protegida permisos={['cobranza:ver','cobranza:registrar_abono']}><Cobranza /></Protegida>} />
+            <Route path="/cuentas-por-pagar" element={<Protegida permisos={['cuentas_pagar:gestionar']}><CuentasPorPagar /></Protegida>} />
+            <Route path="/conteos" element={<Protegida permisos={['conteo_fisico:capturar']}><Conteos /></Protegida>} />
+            <Route path="/cadena-frio" element={<Protegida permisos={['cadena_frio:capturar']}><CadenaFrio /></Protegida>} />
+            <Route path="/compras-sugeridas" element={<Protegida permisos={['recepcion:registrar']}><ComprasSugeridas /></Protegida>} />
+            <Route path="/metas" element={<Protegida permisos={['reportes:ver']}><Metas /></Protegida>} />
+            <Route path="/facturas" element={<Protegida permisos={['facturacion:emitir']}><Facturas /></Protegida>} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

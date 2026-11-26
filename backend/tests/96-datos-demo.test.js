@@ -1,26 +1,82 @@
-// Los datos de demostración se cargan completos y dejan el sistema listo para enseñarlo.
+// Los datos de demostración se cargan completos (Fase 1 y Fase 2) y dejan el sistema listo para enseñarlo.
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+const CARPETA = fs.mkdtempSync(path.join(os.tmpdir(), 'vetshop-demo-'));
+process.env.ALMACENAMIENTO = 'local';
+process.env.ALMACENAMIENTO_CARPETA = CARPETA;
+process.env.FACTURACION_PAC = 'simulado';
+
 const h = require('./helpers/app');
 const { sembrar } = require('../scripts/datosDemo');
 const Producto = require('../models/Producto');
 const InventoryLayer = require('../models/InventoryLayer');
 
 beforeAll(h.resetDb);
-afterAll(h.cerrar);
+afterAll(async () => {
+  await h.cerrar();
+  fs.rmSync(CARPETA, { recursive: true, force: true });
+});
+
+let token, centro;
 
 test('sembrar crea usuarios con PIN, catálogo con precios, inventario con alertas, proveedores y clientes', async () => {
   const usuarios = await sembrar({ password: 'Demo-12345', pinDueno: '2468', pinMedico: '1357' });
-  expect(usuarios).toEqual(['dueno.demo', 'cajero.centro', 'almacen.demo', 'medico.demo']);
+  expect(usuarios).toEqual(['dueno.demo', 'cajero.centro', 'cajero.norte', 'almacen.demo', 'medico.demo']);
   expect(await Producto.countDocuments({})).toBe(5);
 
   const login = await h.login('dueno.demo', 'Demo-12345');
   expect(login.status).toBe(200);
-  const token = login.body.datos.token;
-  const centro = login.body.datos.usuario.sucursales.find(s => s.nombre === 'Centro (prueba)');
+  token = login.body.datos.token;
+  centro = login.body.datos.usuario.sucursales.find(s => s.nombre === 'Centro (prueba)');
   const existencias = await h.request(h.app).get('/api/existencias').set(h.auth(token, centro.id));
   const alertas = existencias.body.datos.flatMap(f => f.alertas);
   expect(alertas).toEqual(expect.arrayContaining(['caducado', 'por_caducar']));
-  expect(await InventoryLayer.countDocuments({ sucursal: { $exists: true } }).setOptions({ sinAlcance: true })).toBe(12);
+  // 12 lotes iniciales + 6 de existencia extra + 3 compras + 2 traspasos recibidos/ajustes de la demo
+  expect(await InventoryLayer.countDocuments({ sucursal: { $exists: true } }).setOptions({ sinAlcance: true })).toBeGreaterThanOrEqual(21);
 
   const clientes = await h.request(h.app).get('/api/clientes').set(h.auth(token));
   expect(clientes.body.datos.map(c => c.nombre)).toContain('Público en general');
+});
+
+test('Fase 2: ventas, cartera con vencido, cuentas por pagar, traspasos, recetas, conteo, frío, metas y facturas', async () => {
+  const get = ruta => h.request(h.app).get(ruta).set(h.auth(token, centro.id));
+
+  const cartera = (await get('/api/cobranza/cartera')).body;
+  const peludos = cartera.datos.find(f => f.cliente.nombre === 'Estética Peludos (prueba)');
+  expect(peludos.vencido).toBeGreaterThan(0);
+  expect(cartera.datos.find(f => f.cliente.nombre === 'Clínica Patitas (prueba)').saldo).toBe(224000 - 50000);
+
+  const porPagar = (await h.request(h.app).get('/api/cuentas-por-pagar').set(h.auth(token))).body;
+  expect(porPagar.resumen).toMatchObject({ facturas: 2, venceSemana: 155000 });
+  expect(porPagar.resumen.vencido).toBe(250000 - 100000);
+
+  // Cuatro semanas de ventas en Centro y Norte
+  const { diaLocal } = require('../helpers/fechas');
+  const desde = diaLocal(new Date(Date.now() - 30 * 86400000));
+  const reporte = (await h.request(h.app).get(`/api/reportes/ventas?desde=${desde}&hasta=${diaLocal()}`).set(h.auth(token))).body.datos;
+  expect(reporte.sucursales.map(s => s.sucursal.nombre).sort()).toEqual(['Centro (prueba)', 'Norte (prueba)']);
+  expect(reporte.totales.ventas).toBeGreaterThan(40);
+
+  const traspasos = (await h.request(h.app).get('/api/traspasos').set(h.auth(token))).body.datos;
+  expect(traspasos.map(x => x.estado).sort()).toEqual(['en_transito', 'recibido']);
+  expect((await get('/api/recetas')).body.datos.map(r => r.estado).sort()).toEqual(['pendiente', 'validada']);
+  expect((await h.request(h.app).get('/api/conteos').set(h.auth(token))).body.datos[0]).toMatchObject({ estado: 'aplicado' });
+  expect((await get('/api/ventas/espera')).body.datos).toHaveLength(1);
+
+  const equipos = (await get('/api/cadena-frio/equipos')).body.datos;
+  expect(equipos.map(e => e.nombre)).toEqual(['Refri vacunas (prueba)']);
+  expect((await get('/api/cadena-frio/lecturas?fueraDeRango=true')).body.datos).toHaveLength(1);
+
+  const avance = (await get('/api/metas')).body.datos.sucursales.find(s => s.sucursal.id === centro.id);
+  expect(avance.meta).toBe(2500000);
+  expect(avance.vendedores[0]).toMatchObject({ vendedor: { nombre: 'Cajero Centro' }, meta: 2000000 });
+
+  const facturas = (await get('/api/facturas')).body;
+  expect(facturas.datos).toEqual(expect.arrayContaining([expect.objectContaining({ folioCompleto: 'F-1', metodoPago: 'PPD', pac: 'simulado', estado: 'timbrada' })]));
+
+  const tablero = (await get('/api/reportes/dashboard')).body.datos;
+  expect(tablero.alertas).toMatchObject({ lecturasFueraDeRango: 1 });
+  expect(tablero.metas).toHaveLength(1);
 });

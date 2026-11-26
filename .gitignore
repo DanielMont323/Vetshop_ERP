@@ -10,8 +10,9 @@ node_modules/
 frontend/dist/
 build/
 
-# Respaldos y logs
+# Respaldos, archivos subidos o generados (recetas, XML de facturas) y logs
 backend/respaldos/
+backend/archivos/
 *.log
 npm-debug.log*
 
