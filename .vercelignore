@@ -1,0 +1,10 @@
+# No subir a Vercel: secretos locales, archivos generados y pruebas
+**/.env
+**/.env.*
+!**/.env.example
+**/node_modules
+backend/archivos/
+backend/tests/
+backend/respaldos/
+frontend/dist/
+*.log

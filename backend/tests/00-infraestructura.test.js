@@ -41,6 +41,20 @@ test('CORS: permite el origen configurado y no otros', async () => {
   expect(malo.headers['access-control-allow-origin']).toBeUndefined();
 });
 
+test('CORS: un «*» acepta las direcciones de cada despliegue de Vercel, y nada más', async () => {
+  const { crearApp } = require('../app');
+  const antes = process.env.CORS_ORIGINS;
+  process.env.CORS_ORIGINS = 'https://vetshop-web.vercel.app, https://vetshop-*-noctra15.vercel.app';
+  const app = crearApp();
+  process.env.CORS_ORIGINS = antes;
+  const origen = async o => (await h.request(app).get('/api/salud').set('Origin', o)).headers['access-control-allow-origin'];
+  expect(await origen('https://vetshop-web.vercel.app')).toBe('https://vetshop-web.vercel.app');
+  expect(await origen('https://vetshop-dqietwc28-noctra15.vercel.app')).toBe('https://vetshop-dqietwc28-noctra15.vercel.app');
+  expect(await origen('https://vetshop-x-noctra15.vercel.app.malo.com')).toBeUndefined();
+  expect(await origen('https://otro-dqietwc28-noctra15.vercel.app')).toBeUndefined();
+  expect(await origen('https://vetshop-a.b-noctra15.vercel.app')).toBeUndefined();
+});
+
 test('CORS: la petición previa (preflight) del navegador permite los encabezados que manda el frontend', async () => {
   // Los encabezados que pone frontend/src/services/api.js
   const res = await h.request(h.app)
