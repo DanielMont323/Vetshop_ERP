@@ -118,4 +118,27 @@ async function libroCuentasPorPagar({ datos, proveedores }, { fecha = new Date()
   return libro.xlsx.writeBuffer();
 }
 
-module.exports = { libroCuentasPorPagar, libroCartera, libroVentas };
+// Bitácora mensual de temperatura de un equipo
+async function libroBitacoraFrio(b) {
+  const libro = new ExcelJS.Workbook();
+  libro.creator = 'Huellitas Vetshop ERP';
+  libro.created = new Date();
+  const h = hoja(libro, 'Lecturas', [
+    ['Fecha', 'fecha', 12], ['Hora', 'hora', 8], ['°C', 'temperatura', 8], ['Estado', 'estado', 16], ['Registró', 'usuario', 22],
+    ['Observación', 'observacion', 30], ['Acción correctiva', 'accion', 36], ['Productos afectados', 'productos', 30]
+  ], b.lecturas.map(l => ({
+    fecha: formatearLocal(l.fecha, 'dd/MM/yyyy'), hora: formatearLocal(l.fecha, 'HH:mm'), temperatura: l.temperatura,
+    estado: l.fueraDeRango ? 'FUERA DE RANGO' : 'En rango', usuario: l.usuario.nombre, observacion: l.observacion, accion: l.accionCorrectiva, productos: l.productosAfectados
+  })));
+  h.insertRow(1, [`${b.equipo.nombre} · ${b.sucursal} · ${b.mes} · rango ${b.equipo.minimo} a ${b.equipo.maximo} °C`]);
+  h.getRow(1).font = { bold: true };
+  h.getRow(2).font = { bold: true };
+  if (b.recepciones.length) {
+    hoja(libro, 'Recepciones', [
+      ['Fecha', 'fecha', 16], ['Proveedor', 'proveedor', 26], ['Factura', 'factura', 14], ['Producto', 'producto', 30], ['Lote', 'lote', 12], ['°C llegada', 'temperatura', 10]
+    ], b.recepciones.map(r => ({ ...r, fecha: formatearLocal(r.fecha, 'dd/MM/yyyy HH:mm') })));
+  }
+  return libro.xlsx.writeBuffer();
+}
+
+module.exports = { libroBitacoraFrio, libroCuentasPorPagar, libroCartera, libroVentas };

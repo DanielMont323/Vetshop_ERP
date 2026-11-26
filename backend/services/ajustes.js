@@ -12,7 +12,8 @@ const { verificarPin } = require('./autorizaciones');
 const auditoria = require('./auditoria');
 
 const MOTIVOS_ENTRADA = ['conteo_fisico', 'inventario_inicial', 'otro'];
-const MOTIVOS_SALIDA = ['merma', 'caducado', 'danado', 'conteo_fisico', 'uso_interno', 'otro'];
+// cadena_frio: producto dañado porque un equipo salió de rango (ver la acción correctiva en la bitácora)
+const MOTIVOS_SALIDA = ['merma', 'caducado', 'danado', 'cadena_frio', 'conteo_fisico', 'uso_interno', 'otro'];
 
 async function registrar(alcance, actor, datos) {
   const sucursal = sucursalDeEscritura(alcance);

@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { inventarioAPI, mensajeDeError } from '../services/api';
 import { NOMBRES_ALERTA, NOMBRES_MOTIVO, cantidadABase, formatearCantidad, formatearFecha, pesosACentavos } from '../utils/formato';
 
-const MOTIVOS = { entrada: ['conteo_fisico', 'inventario_inicial', 'otro'], salida: ['merma', 'caducado', 'danado', 'conteo_fisico', 'uso_interno', 'otro'] };
+const MOTIVOS = { entrada: ['conteo_fisico', 'inventario_inicial', 'otro'], salida: ['merma', 'caducado', 'danado', 'cadena_frio', 'conteo_fisico', 'uso_interno', 'otro'] };
 const campo = 'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500';
 
 // Ajuste de inventario de un producto en la sucursal activa. Siempre con usuario y PIN del dueño.

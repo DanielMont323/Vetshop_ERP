@@ -6,22 +6,22 @@ test('los 4 roles del plan', () => {
   expect([...ROLES].sort()).toEqual(['almacen', 'cajero', 'dueno', 'medico_responsable']);
 });
 
-test('cajero: vender (también a crédito), recibir abonos, ver sus ventas del día, existencias, conteo de corte, catálogo, recetas', () => {
+test('cajero: vender (también a crédito), recibir abonos, ver sus ventas del día, existencias, conteo de corte, catálogo, recetas, temperaturas', () => {
   expect([...MATRIZ.cajero].sort()).toEqual([
-    'catalogo:ver', 'cobranza:registrar_abono', 'corte:capturar_conteo', 'credito:vender', 'existencias:ver', 'recetas:capturar',
-    'ventas:cobrar', 'ventas:ver_propias_del_dia'
+    'cadena_frio:capturar', 'catalogo:ver', 'cobranza:registrar_abono', 'corte:capturar_conteo', 'credito:vender', 'existencias:ver',
+    'recetas:capturar', 'ventas:cobrar', 'ventas:ver_propias_del_dia'
   ]);
 });
 
 test('almacén: entradas/salidas, recepción, traspasos, conteo físico (y ver existencias)', () => {
-  for (const p of ['inventario:entradas', 'inventario:salidas', 'recepcion:registrar', 'traspasos:gestionar', 'conteo_fisico:capturar']) {
+  for (const p of ['inventario:entradas', 'inventario:salidas', 'recepcion:registrar', 'traspasos:gestionar', 'conteo_fisico:capturar', 'cadena_frio:capturar']) {
     expect(tienePermiso('almacen', p)).toBe(true);
   }
   expect(tienePermiso('almacen', 'ventas:cobrar')).toBe(false);
 });
 
-test('médico responsable: capturar y validar recetas, ver existencias y ver catálogo, nada más', () => {
-  expect(permisosDe('medico_responsable').sort()).toEqual(['catalogo:ver', 'existencias:ver', 'recetas:capturar', 'recetas:validar']);
+test('médico responsable: recetas, ver existencias y catálogo, registrar temperaturas; nada más', () => {
+  expect(permisosDe('medico_responsable').sort()).toEqual(['cadena_frio:capturar', 'catalogo:ver', 'existencias:ver', 'recetas:capturar', 'recetas:validar']);
 });
 
 test('dueño: todo, incluidas las autorizaciones', () => {

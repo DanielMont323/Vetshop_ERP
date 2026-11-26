@@ -9,7 +9,7 @@ const { alcanceSucursal } = require('./plugins/alcanceSucursal');
 const TIPOS = ['entrada', 'venta', 'cancelacion', 'traspaso_salida', 'traspaso_entrada', 'ajuste'];
 const TIPOS_POSITIVOS = new Set(['entrada', 'cancelacion', 'traspaso_entrada']);
 const TIPOS_NEGATIVOS = new Set(['venta', 'traspaso_salida']);
-const MOTIVOS_AJUSTE = ['merma', 'caducado', 'danado', 'conteo_fisico', 'uso_interno', 'inventario_inicial', 'otro'];
+const MOTIVOS_AJUSTE = ['merma', 'caducado', 'danado', 'cadena_frio', 'conteo_fisico', 'uso_interno', 'inventario_inicial', 'otro'];
 
 const capaMovidaSchema = new mongoose.Schema(
   {

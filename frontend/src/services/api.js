@@ -221,6 +221,16 @@ export const conteosAPI = {
   cancelar: (id, datos) => api.post(`/conteos/${id}/cancelar`, datos)
 };
 
+export const cadenaFrioAPI = {
+  equipos: params => api.get('/cadena-frio/equipos', { params }),
+  crearEquipo: datos => api.post('/cadena-frio/equipos', datos),
+  actualizarEquipo: (id, datos) => api.patch(`/cadena-frio/equipos/${id}`, datos),
+  lecturas: params => api.get('/cadena-frio/lecturas', { params }),
+  registrar: datos => api.post('/cadena-frio/lecturas', datos),
+  bitacora: params => api.get('/cadena-frio/bitacora', { params, responseType: 'text' }),
+  bitacoraExcel: params => api.get('/cadena-frio/bitacora.xlsx', { params, responseType: 'blob', timeout: 60000 })
+};
+
 export const reportesAPI = {
   dashboard: () => api.get('/reportes/dashboard'),
   ventas: params => api.get('/reportes/ventas', { params }),

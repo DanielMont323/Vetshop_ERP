@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, ArrowLeftRight, Calculator, CalendarClock, ClipboardList, FileText, Landmark, PackageX, TrendingDown } from 'lucide-react';
+import { AlertTriangle, ArrowLeftRight, Calculator, CalendarClock, ClipboardList, FileText, Landmark, Thermometer, PackageX, TrendingDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { mensajeDeError, reportesAPI } from '../services/api';
@@ -35,7 +35,9 @@ const ALERTAS = [
   ['traspasosPorRecibir', 'Traspasos por recibir', ArrowLeftRight, '/traspasos'],
   ['facturasVencidas', 'Facturas de proveedores vencidas', Landmark, '/cuentas-por-pagar'],
   ['facturasPorVencer', 'Facturas de proveedores por vencer (7 días)', Landmark, '/cuentas-por-pagar'],
-  ['sucursalesSinConteo', 'Sucursales sin conteo físico en 7 días', ClipboardList, '/conteos']
+  ['sucursalesSinConteo', 'Sucursales sin conteo físico en 7 días', ClipboardList, '/conteos'],
+  ['lecturasFueraDeRango', 'Lecturas de temperatura fuera de rango (7 días)', Thermometer, '/cadena-frio'],
+  ['equiposSinLectura', 'Refrigeradores sin lectura hoy', Thermometer, '/cadena-frio']
 ];
 
 // Tablero del dueño: hoy, últimos 7 días y alertas de la sucursal activa
