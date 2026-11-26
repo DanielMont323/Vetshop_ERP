@@ -50,6 +50,7 @@ router.post(
     body('cliente').optional().isMongoId().withMessage('Cliente inválido'),
     body('caja').optional().custom(entero(1, 20)).withMessage('Caja inválida'),
     body('esperaId').optional().isMongoId(),
+    body('vendedor').optional().isMongoId().withMessage('Vendedor inválido'),
     ...reglasPartidas,
     body('pagos').isArray({ min: 1, max: 5 }).withMessage('Indica de 1 a 5 pagos'),
     body('pagos.*.metodo').isIn(METODOS_PAGO).withMessage(`Método de pago inválido (${METODOS_PAGO.join(', ')})`),

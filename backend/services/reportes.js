@@ -13,6 +13,7 @@ const existencias = require('./existencias');
 const cuentasPorPagar = require('./cuentasPorPagar');
 const conteos = require('./conteos');
 const cadenaFrio = require('./cadenaFrio');
+const metas = require('./metas');
 
 const TIPOS_DISTRIBUCION = ['clinica', 'veterinaria', 'petshop', 'estetica'];
 const FORMATOS = { dia: '%Y-%m-%d', semana: '%G-S%V', mes: '%Y-%m', anio: '%Y' };
@@ -147,7 +148,7 @@ async function resumen(alcance, { desde, hasta, agrupar = 'dia' } = {}) {
 async function dashboard(alcance, ahora = new Date()) {
   const hoy = rangoDia(ahora);
   const hace7 = { inicio: new Date(hoy.inicio.getTime() - 6 * DIA_MS), fin: hoy.fin };
-  const [deHoy, semana, filasExistencias, cortesPendientes, cortesConDiferencia, recetasPendientes, traspasosPorRecibir, porPagar, sucursalesSinConteo, frio] = await Promise.all([
+  const [deHoy, semana, filasExistencias, cortesPendientes, cortesConDiferencia, recetasPendientes, traspasosPorRecibir, porPagar, sucursalesSinConteo, frio, metasMes] = await Promise.all([
     totales(alcance, hoy),
     porPeriodo(alcance, hace7, 'dia'),
     existencias.listar(alcance, { ahora }),
@@ -157,12 +158,15 @@ async function dashboard(alcance, ahora = new Date()) {
     Traspaso.countDocuments(conAlcance({ estado: 'en_transito' }, alcance, 'destino')),
     cuentasPorPagar.alertas(ahora),
     conteos.sucursalesSinConteo(alcance, ahora),
-    cadenaFrio.alertas(alcance, ahora)
+    cadenaFrio.alertas(alcance, ahora),
+    metas.avance(alcance, { periodo: diaLocal(ahora).slice(0, 7) }, ahora)
   ]);
   const cuenta = alerta => filasExistencias.filter(f => f.alertas.includes(alerta)).length;
   return {
     hoy: deHoy,
     ultimos7: semana,
+    // Metas del mes en curso (solo sucursales con meta)
+    metas: metasMes.sucursales.filter(s => s.meta).map(({ vendedores: _v, ...s }) => s),
     alertas: {
       caducados: cuenta('caducado'),
       porCaducar: cuenta('por_caducar'),

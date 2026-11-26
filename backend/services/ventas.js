@@ -23,6 +23,7 @@ const turnos = require('./turnos');
 const { verificarPin } = require('./autorizaciones');
 const auditoria = require('./auditoria');
 const credito = require('./credito');
+const metas = require('./metas');
 const { tienePermiso } = require('../config/permisos');
 
 const SERIE_VENTA = 'V';
@@ -71,6 +72,7 @@ const publica = v => ({
   caja: v.caja,
   turno: v.turno || null,
   cajero: { id: v.cajero, nombre: v.cajeroNombre },
+  vendedor: v.vendedor ? { id: v.vendedor, nombre: v.vendedorNombre } : { id: v.cajero, nombre: v.cajeroNombre },
   cliente: { id: v.cliente, nombre: v.clienteNombre },
   listaPrecios: v.listaPrecios,
   partidas: v.partidas,
@@ -110,6 +112,9 @@ async function cobrar(alcance, actor, datos, { verCostos = false } = {}) {
     if (!datos.autorizacion?.usuario) throw new ErrorApp(403, 'Los descuentos requieren autorización del dueño (usuario y PIN)', 'AUTORIZACION_REQUERIDA');
     autorizador = await verificarPin({ ...datos.autorizacion, permiso: 'autorizar:descuento', sucursal });
   }
+
+  // Vendedor distinto del cajero (para las metas)
+  const vendedor = datos.vendedor && String(datos.vendedor) !== String(actor._id) ? await metas.validarVendedor(sucursal, datos.vendedor) : null;
 
   // Parte a crédito: el cliente debe tenerlo; si rebasa el límite o tiene saldo vencido, PIN del dueño
   const montoCredito = (datos.pagos || []).filter(p => p.metodo === 'credito').reduce((s, p) => s + p.monto, 0);
@@ -174,6 +179,7 @@ async function cobrar(alcance, actor, datos, { verCostos = false } = {}) {
         [{
           _id: ventaId, sucursal, serie: SERIE_VENTA, folio,
           caja: turno.caja, turno: turno._id, cajero: actor._id, cajeroNombre: actor.nombre,
+          ...(vendedor && { vendedor: vendedor._id, vendedorNombre: vendedor.nombre }),
           cliente: cliente._id, clienteNombre: cliente.nombre, listaPrecios: cliente.listaPrecios,
           partidas, ...sumas, costo: partidas.reduce((s, p) => s + p.costo, 0),
           pagos: datos.pagos, cambio, autorizacionDescuento: autorizador?.id, autorizacionCredito: autorizadorCredito?.id,
