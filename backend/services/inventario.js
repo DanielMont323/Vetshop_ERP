@@ -82,7 +82,8 @@ async function registrarEntrada(datos, session) {
   const { lote, caducidad } = validarLoteYCaducidad(producto, datos, {
     fecha,
     // Inventario inicial: para registrar lo que ya está caducado y darlo de baja. Traspaso: lo que caducó en el camino llegó y hay que registrarlo
-    permitirCaducado: Boolean(datos.permitirCaducado && ['inventario_inicial', 'traspaso_entrada'].includes(origen))
+    // Ajuste por conteo físico: un sobrante de un lote ya caducado se registra para darlo de baja después
+    permitirCaducado: Boolean(datos.permitirCaducado && ['inventario_inicial', 'traspaso_entrada', 'ajuste_entrada'].includes(origen))
   });
 
   const [capa] = await InventoryLayer.create(

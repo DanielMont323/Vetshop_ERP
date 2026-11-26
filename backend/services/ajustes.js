@@ -5,7 +5,8 @@
 const mongoose = require('mongoose');
 const { conTransaccion } = require('../helpers/transaccion');
 const { sucursalDeEscritura } = require('../helpers/alcance');
-const { solicitudInvalida } = require('../helpers/errores');
+const { solicitudInvalida, conflicto } = require('../helpers/errores');
+const ConteoFisico = require('../models/ConteoFisico');
 const inventario = require('./inventario');
 const { verificarPin } = require('./autorizaciones');
 const auditoria = require('./auditoria');
@@ -23,6 +24,10 @@ async function registrar(alcance, actor, datos) {
   const autorizador = await verificarPin({ ...autorizacion, permiso: 'autorizar:ajuste_inventario', sucursal });
 
   return conTransaccion(async session => {
+    // Durante un conteo físico las diferencias se corrigen al aplicarlo, no con ajustes sueltos
+    if (await ConteoFisico.exists({ sucursal, abierto: true }).session(session)) {
+      throw conflicto('Hay un conteo físico abierto en esta sucursal: termínalo o cancélalo antes de ajustar', 'CONTEO_EN_CURSO');
+    }
     const comun = { sucursal, usuario: actor._id, motivo, nota, autorizadoPor: autorizador.id, referencia: { modelo: 'Ajuste' } };
     let movimientos;
     if (tipo === 'entrada') {

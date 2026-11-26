@@ -25,6 +25,7 @@ const PERMISOS = [
   'recepcion:registrar',
   'traspasos:gestionar',
   'conteo_fisico:capturar',
+  'conteo_fisico:aplicar',
   // Recetas
   'recetas:capturar',
   'recetas:validar',
