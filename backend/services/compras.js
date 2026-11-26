@@ -12,6 +12,7 @@ const { importePartida, aplicarTasa, sumar } = require('../helpers/dinero');
 const { deHoraLocal, diaLocal, rangoDias } = require('../helpers/fechas');
 const inventario = require('./inventario');
 const auditoria = require('./auditoria');
+const cuentasPorPagar = require('./cuentasPorPagar');
 
 const TEMPERATURA_MIN = 2;
 const TEMPERATURA_MAX = 8;
@@ -180,6 +181,8 @@ async function confirmar(alcance, actor, id) {
       capas[`partidas.${i}.capa`] = capa._id;
     }
     await Compra.updateOne({ _id: compra._id, sucursal: compra.sucursal }, { $set: capas }, { session });
+    // Cuenta por pagar de la factura (las de contado quedan ya pagadas)
+    await cuentasPorPagar.registrarCompra(compra, session);
 
     await auditoria.registrar(
       {

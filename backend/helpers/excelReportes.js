@@ -96,4 +96,26 @@ async function libroCartera(cartera, { fecha = new Date() } = {}) {
   return libro.xlsx.writeBuffer();
 }
 
-module.exports = { libroCartera, libroVentas };
+// Facturas pendientes de pago a proveedores (y resumen por proveedor)
+async function libroCuentasPorPagar({ datos, proveedores }, { fecha = new Date() } = {}) {
+  const libro = new ExcelJS.Workbook();
+  libro.creator = 'Huellitas Vetshop ERP';
+  libro.created = new Date();
+  hoja(libro, 'Facturas pendientes', [
+    ['Proveedor', 'proveedor', 28], ['Factura', 'folio', 14], ['Sucursal', 'sucursal', 18], ['Fecha', 'fecha', 12], ['Vence', 'vence', 12],
+    ['Días', 'dias', 8], ['Total', 'total', 14, true], ['Pagado', 'pagado', 14, true], ['Saldo', 'saldo', 14, true]
+  ], datos.map(c => ({
+    proveedor: c.proveedor.nombre, folio: c.folioFactura, sucursal: c.sucursal.nombre, fecha: formatearLocal(c.fechaFactura, 'dd/MM/yyyy'),
+    vence: formatearLocal(c.vencimiento, 'dd/MM/yyyy'), dias: c.diasParaVencer, total: aPesos(c.total), pagado: aPesos(c.pagado), saldo: aPesos(c.saldo)
+  })));
+  hoja(libro, 'Por proveedor', [
+    ['Proveedor', 'proveedor', 28], ['Saldo', 'saldo', 14, true], ['Al corriente', 'corriente', 14, true], ['1 a 30 días', 'd1_30', 14, true],
+    ['31 a 60 días', 'd31_60', 14, true], ['Más de 60 días', 'mas60', 15, true], ['Facturas', 'facturas', 10]
+  ], proveedores.map(p => ({
+    proveedor: p.proveedor.nombre, saldo: aPesos(p.saldo), corriente: aPesos(p.corriente), d1_30: aPesos(p.d1_30), d31_60: aPesos(p.d31_60), mas60: aPesos(p.mas60), facturas: p.facturas
+  })));
+  libro.getWorksheet('Facturas pendientes').addRow({ proveedor: `Al ${formatearLocal(fecha, 'dd/MM/yyyy')}` });
+  return libro.xlsx.writeBuffer();
+}
+
+module.exports = { libroCuentasPorPagar, libroCartera, libroVentas };
