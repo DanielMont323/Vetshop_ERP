@@ -216,6 +216,18 @@ Paso 9 (dashboard y reportes) — no agrega colecciones; agrega sobre `Venta`, `
 - **Corte**: la parte a crédito no es dinero (no entra); los abonos del turno sí (por forma de pago).
 - Serialización: cada venta a crédito y cada abono escribe `cliente.credito.ultimoMovimiento` en su transacción.
 
+### Cuentas por pagar (Fase 2, Paso 12)
+
+- **`CuentaPorPagar`** (`cuentas_por_pagar`): una por compra recibida (índice único en `compra`). Copia proveedor,
+  factura, fecha, condición y vencimiento de la compra. `saldo = total − pagado`; estado `pendiente → pagada`.
+  Las de **contado** nacen pagadas (`pagadaAlRecibir`).
+- **`PagoProveedor`** (`pagos_proveedores`): fecha (puede ser anterior, nunca futura), forma (transferencia, cheque,
+  efectivo), referencia, `aplicaciones[]` (factura, monto); pagos parciales; sin saldos a favor; idempotente con
+  `claveOperacion`. Cancelar regresa el saldo a las facturas. Todo queda en bitácora.
+- Globales (pagos centralizados del dueño, permiso `cuentas_pagar:gestionar`); `sucursal` es la que recibió.
+- Tablero: facturas vencidas y por vencer en 7 días. `npm run preparar-bd` crea las cuentas de compras que se
+  recibieron antes del módulo.
+
 Pasos siguientes (diseño acordado): ver la tabla del plan. Ajustes ya decididos:
 - `Venta.partidas[]` guarda copia de precio unitario, lista de precios, tasa de IVA y descuento.
 - `Receta.partidas[]`: producto, cantidad prescrita, cantidad entregada, lote.

@@ -18,6 +18,7 @@ import Traspasos from './pages/Traspasos';
 import Dashboard from './pages/Dashboard';
 import Reportes from './pages/Reportes';
 import Cobranza from './pages/Cobranza';
+import CuentasPorPagar from './pages/CuentasPorPagar';
 
 function Inicio() {
   const { usuario, sucursalActiva, puede } = useAuth();
@@ -53,6 +54,7 @@ export default function App() {
             <Route path="/traspasos" element={<Traspasos />} />
             <Route path="/reportes" element={<Reportes />} />
             <Route path="/cobranza" element={<Cobranza />} />
+            <Route path="/cuentas-por-pagar" element={<CuentasPorPagar />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

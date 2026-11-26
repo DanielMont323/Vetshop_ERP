@@ -1,5 +1,5 @@
 import { Link, NavLink, Navigate, Outlet } from 'react-router-dom';
-import { ArrowLeftRight, BarChart3, HandCoins, Settings, Boxes, Calculator, FileText, KeyRound, LogOut, Package, PawPrint, ReceiptText, ShoppingCart, Store, Tags, Truck, Users } from 'lucide-react';
+import { ArrowLeftRight, BarChart3, HandCoins, Landmark, Settings, Boxes, Calculator, FileText, KeyRound, LogOut, Package, PawPrint, ReceiptText, ShoppingCart, Store, Tags, Truck, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const NOMBRES_ROL = {
@@ -37,6 +37,7 @@ export default function Layout() {
                 puede('recepcion:registrar') && ['/compras', 'Recepción', Truck],
                 puede('traspasos:gestionar') && ['/traspasos', 'Traspasos', ArrowLeftRight],
                 puede('recepcion:registrar') && ['/proveedores', 'Proveedores', Users],
+                puede('cuentas_pagar:gestionar') && ['/cuentas-por-pagar', 'Por pagar', Landmark],
                 ['/productos', 'Productos', Package],
                 ['/listas-precios', 'Precios', Tags],
                 puede('usuarios:gestionar') && ['/administracion', 'Administración', Settings]
