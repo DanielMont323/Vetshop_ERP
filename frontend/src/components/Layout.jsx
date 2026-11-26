@@ -1,5 +1,5 @@
 import { Link, NavLink, Navigate, Outlet } from 'react-router-dom';
-import { ArrowLeftRight, BarChart3, HandCoins, Landmark, Settings, Boxes, Calculator, FileText, KeyRound, LogOut, Package, PawPrint, ReceiptText, ShoppingCart, Store, Tags, Truck, Users } from 'lucide-react';
+import { ArrowLeftRight, BarChart3, ClipboardList, HandCoins, Landmark, Settings, Boxes, Calculator, FileText, KeyRound, LogOut, Package, PawPrint, ReceiptText, ShoppingCart, Store, Tags, Truck, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const NOMBRES_ROL = {
@@ -25,7 +25,7 @@ export default function Layout() {
           </Link>
 
           {puede('catalogo:ver') && (
-            <nav className="flex items-center gap-1 text-sm">
+            <nav className="flex flex-wrap items-center gap-1 text-sm">
               {[
                 puede('reportes:ver') && ['/reportes', 'Reportes', BarChart3],
                 puede('ventas:cobrar') && ['/caja', 'Caja', ShoppingCart],
@@ -36,6 +36,7 @@ export default function Layout() {
                 puede('existencias:ver') && ['/existencias', 'Existencias', Boxes],
                 puede('recepcion:registrar') && ['/compras', 'Recepción', Truck],
                 puede('traspasos:gestionar') && ['/traspasos', 'Traspasos', ArrowLeftRight],
+                puede('conteo_fisico:capturar') && ['/conteos', 'Conteo', ClipboardList],
                 puede('recepcion:registrar') && ['/proveedores', 'Proveedores', Users],
                 puede('cuentas_pagar:gestionar') && ['/cuentas-por-pagar', 'Por pagar', Landmark],
                 ['/productos', 'Productos', Package],
