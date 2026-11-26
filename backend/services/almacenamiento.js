@@ -1,9 +1,8 @@
-// Almacenamiento de archivos (fotos/escaneos de recetas) FUERA de MongoDB.
+// Almacenamiento de archivos (fotos/escaneos de recetas y XML de facturas) FUERA de MongoDB.
 //
 // ALMACENAMIENTO=local        → carpeta en disco (ALMACENAMIENTO_CARPETA, por defecto backend/archivos).
 //                               Solo para desarrollo y pruebas: en Vercel el disco no es persistente.
-// ALMACENAMIENTO=vercel_blob  → PENDIENTE: requiere crear el almacén en Vercel y BLOB_READ_WRITE_TOKEN.
-//                               (Se implementa con @vercel/blob: put / get / del, acceso privado.)
+// ALMACENAMIENTO=vercel_blob  → Vercel Blob con acceso privado (producción). Requiere BLOB_READ_WRITE_TOKEN.
 //
 // La interfaz es la misma para cualquier driver: guardar(buffer, {tipo, nombre}) → clave; leer(clave) → buffer.
 const fs = require('fs/promises');
@@ -48,15 +47,30 @@ const drivers = {
       return fs.readFile(destino);
     }
   },
+  // Vercel Blob con acceso PRIVADO: los archivos no tienen URL pública; solo el servidor los lee con el token
+  // (BLOB_READ_WRITE_TOKEN, lo pone Vercel al conectar el almacén al proyecto).
   vercel_blob: {
-    async guardar() {
-      throw new ErrorApp(503, 'El almacenamiento en Vercel Blob aún no está configurado', 'ALMACENAMIENTO_NO_CONFIGURADO');
+    async guardar(buffer, { extension, prefijo }) {
+      exigirToken();
+      const clave = `${prefijo}/${crypto.randomUUID()}.${extension}`;
+      await require('@vercel/blob').put(clave, buffer, { access: 'private', addRandomSuffix: false, contentType: TIPO_POR_EXTENSION[extension] });
+      return clave;
     },
-    async leer() {
-      throw new ErrorApp(503, 'El almacenamiento en Vercel Blob aún no está configurado', 'ALMACENAMIENTO_NO_CONFIGURADO');
+    async leer(clave) {
+      exigirToken();
+      const r = await require('@vercel/blob').get(clave, { access: 'private' });
+      if (!r?.stream) throw new ErrorApp(404, 'Archivo no encontrado', 'NO_ENCONTRADO');
+      return Buffer.from(await new Response(r.stream).arrayBuffer());
     }
   }
 };
+
+const TIPO_POR_EXTENSION = { jpg: 'image/jpeg', png: 'image/png', pdf: 'application/pdf', xml: 'application/xml' };
+function exigirToken() {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    throw new ErrorApp(503, 'El almacenamiento en Vercel Blob no está configurado (falta BLOB_READ_WRITE_TOKEN)', 'ALMACENAMIENTO_NO_CONFIGURADO');
+  }
+}
 
 function driver() {
   const nombre = process.env.ALMACENAMIENTO || 'local';
