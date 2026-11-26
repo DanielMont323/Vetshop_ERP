@@ -1,0 +1,8 @@
+# No subir a Vercel: secretos locales, archivos de prueba y pruebas
+.env
+.env.*
+!.env.example
+archivos/
+tests/
+respaldos/
+*.log
