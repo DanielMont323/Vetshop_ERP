@@ -244,6 +244,17 @@ Paso 9 (dashboard y reportes) — no agrega colecciones; agrega sobre `Venta`, `
 - Con un conteo abierto se bloquean los ajustes manuales de la sucursal (`CONTEO_EN_CURSO`). Tablero: sucursales
   activas sin conteo aplicado en 7 días.
 
+### Cadena de frío (Fase 2, Paso 14)
+
+- **`EquipoFrio`** (`equipos_frio`, por sucursal): nombre único por sucursal, tipo (refrigerador/congelador), rango
+  `minimo`–`maximo` en °C (un decimal; 2–8 por defecto), `lecturasPorDia`, `activo`. Alta y cambios: dueño.
+- **`LecturaTemperatura`** (`lecturas_temperatura`, por sucursal, **inmutable**): equipo, fecha, temperatura, copia del
+  rango, `fueraDeRango`, observación; fuera de rango exige `accionCorrectiva` (y `productosAfectados`) y va a bitácora.
+  La registran cajero, almacén, médico y dueño (`cadena_frio:capturar`).
+- Bitácora mensual por equipo (HTML hoja carta y Excel) con las recepciones de la sucursal que trajeron temperatura
+  de llegada. Producto dañado: ajuste de salida con motivo `cadena_frio`.
+- Tablero: lecturas fuera de rango en 7 días y equipos activos sin lectura hoy.
+
 Pasos siguientes (diseño acordado): ver la tabla del plan. Ajustes ya decididos:
 - `Venta.partidas[]` guarda copia de precio unitario, lista de precios, tasa de IVA y descuento.
 - `Receta.partidas[]`: producto, cantidad prescrita, cantidad entregada, lote.

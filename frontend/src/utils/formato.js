@@ -93,7 +93,7 @@ export const NOMBRES_MOVIMIENTO = {
 };
 
 export const NOMBRES_MOTIVO = {
-  merma: 'Merma', caducado: 'Caducado', danado: 'Dañado', conteo_fisico: 'Conteo físico',
+  merma: 'Merma', caducado: 'Caducado', danado: 'Dañado', cadena_frio: 'Cadena de frío', conteo_fisico: 'Conteo físico',
   uso_interno: 'Uso interno', inventario_inicial: 'Inventario inicial', otro: 'Otro'
 };
 
