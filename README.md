@@ -25,8 +25,8 @@ npm run dev:memoria    # API local con Mongo en memoria y usuarios de prueba (se
 `dev:memoria` crea los usuarios `dueno.demo`, `cajero.centro`, `almacen.demo` y `medico.demo`. Todos usan la
 contraseña `Prueba-12345`; el PIN del dueño es 1234 y el del médico 4321.
 
-Con Atlas: copia `backend/.env.example` a `backend/.env`, llena los valores y ejecuta `npm run dev`. El primer dueño
-se crea con:
+Con Atlas: copia `backend/.env.example` a `backend/.env`, llena los valores, ejecuta `npm run preparar-bd` (crea
+colecciones e índices; se puede repetir) y luego `npm run dev`. El primer dueño se crea con:
 
 ```bash
 DUENO_PASSWORD="una-contraseña-larga" npm run crear-dueno -- --usuario carlos --nombre "Carlos"

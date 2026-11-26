@@ -22,6 +22,8 @@ Revisa `docs/PENDIENTES.md`. Para el piloto conviene resolver o aceptar explíci
 - [ ] **Vercel – backend** (carpeta `backend/`): variables `MONGODB_URI`, `JWT_SECRET` (aleatorio de 48+ bytes),
   `CORS_ORIGINS` (la URL del frontend), `NODE_ENV=production`, y las de almacenamiento cuando se configure Blob.
 - [ ] **Vercel – frontend** (carpeta `frontend/`): variable `VITE_API_URL` = URL del backend + `/api`.
+- [x] Crear la base `vetshop` con sus colecciones e índices: `npm run preparar-bd` (desde `backend/`, con `.env` apuntando
+  a Atlas). Repetirlo después de cada actualización que agregue índices.
 - [ ] Abrir `https://<backend>/api/salud` y ver `{"ok":true}`.
 
 ## 3. Datos iniciales
