@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, ThermometerSnowflake } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, ShoppingBag, ThermometerSnowflake } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { comprasAPI, mensajeDeError } from '../services/api';
@@ -41,6 +42,9 @@ export default function Compras() {
     <section className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-lg font-semibold mr-auto">Recepción de mercancía</h2>
+        <Link to="/compras-sugeridas" className="flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm hover:bg-slate-50">
+          <ShoppingBag size={16} aria-hidden="true" /> Compras sugeridas
+        </Link>
         <button type="button" onClick={() => setAbierta('nueva')} className="flex items-center gap-1 rounded-lg bg-emerald-600 text-white px-3 py-2 hover:bg-emerald-700">
           <Plus size={18} aria-hidden="true" /> Nueva recepción
         </button>

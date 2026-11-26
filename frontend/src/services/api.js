@@ -136,7 +136,8 @@ export const comprasAPI = {
   crear: datos => api.post('/compras', datos),
   actualizar: (id, datos) => api.put(`/compras/${id}`, datos),
   confirmar: id => api.post(`/compras/${id}/confirmar`),
-  cancelar: (id, motivo) => api.post(`/compras/${id}/cancelar`, { motivo })
+  cancelar: (id, motivo) => api.post(`/compras/${id}/cancelar`, { motivo }),
+  sugeridas: params => api.get('/compras/sugeridas', { params })
 };
 
 export const clientesAPI = {

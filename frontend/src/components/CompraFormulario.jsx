@@ -108,7 +108,7 @@ export default function CompraFormulario({ compra, alCerrar, alGuardar }) {
     const motivo = await pedirTexto('¿Por qué se cancela este borrador?', { minimo: 3, textoAceptar: 'Cancelar borrador', textoCancelar: 'Volver', peligro: true });
     if (motivo === null) return;
     try {
-      await comprasAPI.cancelar(compra.id, motivo);
+      await comprasAPI.cancelar(idCompra, motivo);
       toast.success('Borrador cancelado');
       alGuardar();
     } catch (e) {
@@ -124,7 +124,7 @@ export default function CompraFormulario({ compra, alCerrar, alGuardar }) {
       <div className="bg-white rounded-xl shadow-lg w-full max-w-6xl max-h-[92vh] overflow-y-auto p-6 space-y-5">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold flex items-center gap-3">
-            {compra ? `Factura ${compra.folioFactura}` : 'Nueva recepción'}
+            {compra?.id ? `Factura ${compra.folioFactura}` : 'Nueva recepción'}
             <span className={`rounded px-2 py-0.5 text-xs ${estado.clase}`}>{estado.texto}</span>
           </h2>
           <button type="button" onClick={alCerrar} aria-label="Cerrar" className="text-slate-500 hover:text-slate-800"><X /></button>
@@ -135,7 +135,7 @@ export default function CompraFormulario({ compra, alCerrar, alGuardar }) {
             <span className="text-sm font-medium">Proveedor</span>
             <select className={campo} value={cab.proveedor} onChange={e => cambiar('proveedor', e.target.value)} required>
               <option value="">Elige…</option>
-              {compra && !proveedores.some(p => p.id === compra.proveedor.id) && <option value={compra.proveedor.id}>{compra.proveedor.nombre}</option>}
+              {compra?.proveedor.id && !proveedores.some(p => p.id === compra.proveedor.id) && <option value={compra.proveedor.id}>{compra.proveedor.nombre}</option>}
               {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
             </select>
           </label>
@@ -179,7 +179,7 @@ export default function CompraFormulario({ compra, alCerrar, alGuardar }) {
         </div>
 
         <div className="flex flex-wrap justify-end gap-3">
-          {compra?.estado === 'borrador' && (
+          {idCompra && compra?.estado !== 'recibida' && compra?.estado !== 'cancelada' && (
             <button type="button" onClick={cancelarBorrador} className="mr-auto rounded-lg border border-red-300 text-red-700 px-4 py-2 hover:bg-red-50">Cancelar borrador</button>
           )}
           <button type="button" onClick={alCerrar} className="rounded-lg border border-slate-300 px-4 py-2">Cerrar</button>
