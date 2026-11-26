@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { DialogoProvider } from './contexts/DialogoContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import CambiarPassword, { MiPin } from './pages/CambiarPassword';
@@ -35,6 +36,7 @@ function Inicio() {
 export default function App() {
   return (
     <AuthProvider>
+      <DialogoProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -60,6 +62,7 @@ export default function App() {
         </Routes>
       </BrowserRouter>
       <Toaster position="top-right" />
+      </DialogoProvider>
     </AuthProvider>
   );
 }

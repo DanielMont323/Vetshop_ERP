@@ -3,11 +3,13 @@ import toast from 'react-hot-toast';
 import { mensajeDeError, turnosAPI } from '../../services/api';
 import { formatearDinero, formatearFecha, pesosACentavos } from '../../utils/formato';
 import ConteoDenominaciones, { aDenominaciones, conteoVacio } from './ConteoDenominaciones';
+import { useDialogo } from '../../contexts/DialogoContext';
 
 const campo = 'rounded border border-slate-300 px-2 py-1.5';
 
 // Turno abierto del cajero: datos, retiros de efectivo y corte ciego (sin mostrar lo esperado).
 export default function TurnoAbierto({ turno, alCambiar, alContar }) {
+  const { confirmar } = useDialogo();
   const [retiro, setRetiro] = useState({ monto: '', motivo: '', usuario: '', pin: '' });
   const [conteo, setConteo] = useState(conteoVacio);
   const [tarjeta, setTarjeta] = useState('');
@@ -39,7 +41,7 @@ export default function TurnoAbierto({ turno, alCambiar, alContar }) {
     const t = pesosACentavos(tarjeta) ?? 0;
     const tr = pesosACentavos(transferencia) ?? 0;
     if (Number.isNaN(t) || Number.isNaN(tr)) return toast.error('Usa pesos con máximo 2 decimales');
-    if (!window.confirm('El conteo se registra UNA sola vez y no se puede corregir. ¿Ya contaste todo?')) return;
+    if (!(await confirmar('El conteo se registra UNA sola vez y no se puede corregir. ¿Ya contaste todo?', { textoAceptar: 'Sí, registrar conteo', textoCancelar: 'Seguir contando' }))) return;
     setEnviando(true);
     try {
       const r = await turnosAPI.contar(turno.id, { denominaciones: lista, tarjeta: t, transferencia: tr });

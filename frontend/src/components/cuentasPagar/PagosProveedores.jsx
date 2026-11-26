@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { cuentasPagarAPI, mensajeDeError } from '../../services/api';
 import { formatearDinero, formatearFecha, hoyLocal } from '../../utils/formato';
+import { useDialogo } from '../../contexts/DialogoContext';
 
 const METODOS = { transferencia: 'Transferencia', cheque: 'Cheque', efectivo: 'Efectivo' };
 const haceDias = dias => {
@@ -11,6 +12,7 @@ const haceDias = dias => {
 
 // Historial de pagos a proveedores, con cancelación (se capturó mal).
 export default function PagosProveedores({ alCambiar }) {
+  const { pedirTexto } = useDialogo();
   const [desde, setDesde] = useState(haceDias(30));
   const [hasta, setHasta] = useState(hoyLocal());
   const [pagos, setPagos] = useState([]);
@@ -28,8 +30,8 @@ export default function PagosProveedores({ alCambiar }) {
   }, [cargar]);
 
   const cancelar = async pago => {
-    const motivo = window.prompt(`Motivo para cancelar el pago de ${formatearDinero(pago.monto)} a ${pago.proveedor.nombre}:`);
-    if (!motivo || motivo.trim().length < 3) return;
+    const motivo = await pedirTexto(`Motivo para cancelar el pago de ${formatearDinero(pago.monto)} a ${pago.proveedor.nombre}:`, { minimo: 3, textoAceptar: 'Cancelar pago', textoCancelar: 'Volver', peligro: true });
+    if (!motivo) return;
     try {
       await cuentasPagarAPI.cancelarPago(pago.id, { motivo: motivo.trim() });
       toast.success('Pago cancelado: las facturas vuelven a quedar pendientes');

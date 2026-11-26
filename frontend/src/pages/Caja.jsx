@@ -11,12 +11,14 @@ import Carrito from '../components/caja/Carrito';
 import PanelCobro from '../components/caja/PanelCobro';
 import VentasEspera from '../components/caja/VentasEspera';
 import SelectorReceta from '../components/caja/SelectorReceta';
+import { useDialogo } from '../contexts/DialogoContext';
 
 let siguienteClave = 0;
 const enfocar = id => setTimeout(() => document.getElementById(id)?.focus(), 0);
 
 // Pantalla de caja: lector de código de barras, F2 buscar, F12 cobrar.
 export default function Caja() {
+  const { pedirTexto } = useDialogo();
   const { sucursalActiva } = useAuth();
   const [clientes, setClientes] = useState([]);
   const [clienteId, setClienteId] = useState('');
@@ -127,7 +129,7 @@ export default function Caja() {
 
   const guardarEspera = async () => {
     if (!lineas.length) return;
-    const nota = window.prompt('Nota para identificarla (p. ej. nombre del cliente):', cliente && clientes[0]?.id !== clienteId ? cliente.nombre : '');
+    const nota = await pedirTexto('Nota para identificarla (p. ej. nombre del cliente):', { valorInicial: cliente && clientes[0]?.id !== clienteId ? cliente.nombre : '', minimo: 0, maximo: 120, textoAceptar: 'Poner en espera' });
     if (nota === null) return;
     try {
       await ventasAPI.guardarEspera({ nota: nota.trim() || undefined, cliente: clientes[0]?.id === clienteId ? undefined : clienteId, partidas: partidasApi().filter(p => p.cantidad && !Number.isNaN(p.cantidad)) });

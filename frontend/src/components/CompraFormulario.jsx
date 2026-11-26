@@ -8,6 +8,7 @@ import {
 } from '../utils/formato';
 import BuscadorProducto from './BuscadorProducto';
 import PartidasCompra from './PartidasCompra';
+import { useDialogo } from '../contexts/DialogoContext';
 
 const campo = 'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500';
 const TASAS = { tasa_16: 1600, tasa_0: 0, exento: 0 };
@@ -30,6 +31,7 @@ const filaDesdeCompra = p => ({
 });
 
 export default function CompraFormulario({ compra, alCerrar, alGuardar }) {
+  const { confirmar, pedirTexto } = useDialogo();
   const editable = !compra || compra.estado === 'borrador';
   const [proveedores, setProveedores] = useState([]);
   const [cab, setCab] = useState({
@@ -80,15 +82,15 @@ export default function CompraFormulario({ compra, alCerrar, alGuardar }) {
     return { cuerpo };
   }
 
-  const guardar = async confirmar => {
+  const guardar = async confirmarRecepcion => {
     const { cuerpo, error } = armarCuerpo();
     if (error) return toast.error(error);
-    if (confirmar && !window.confirm('Al confirmar, la mercancía entra al inventario y la compra ya no se podrá modificar. ¿Continuar?')) return;
+    if (confirmarRecepcion && !(await confirmar('Al confirmar, la mercancía entra al inventario y la compra ya no se podrá modificar. ¿Continuar?', { textoAceptar: 'Confirmar recepción' }))) return;
     setEnviando(true);
     try {
       const r = idCompra ? await comprasAPI.actualizar(idCompra, cuerpo) : await comprasAPI.crear(cuerpo);
       setIdCompra(r.data.datos.id);
-      if (confirmar) {
+      if (confirmarRecepcion) {
         await comprasAPI.confirmar(r.data.datos.id);
         toast.success('Recepción confirmada: la mercancía ya está en el inventario');
       } else {
@@ -103,7 +105,7 @@ export default function CompraFormulario({ compra, alCerrar, alGuardar }) {
   };
 
   const cancelarBorrador = async () => {
-    const motivo = window.prompt('¿Por qué se cancela este borrador?');
+    const motivo = await pedirTexto('¿Por qué se cancela este borrador?', { minimo: 3, textoAceptar: 'Cancelar borrador', textoCancelar: 'Volver', peligro: true });
     if (motivo === null) return;
     try {
       await comprasAPI.cancelar(compra.id, motivo);

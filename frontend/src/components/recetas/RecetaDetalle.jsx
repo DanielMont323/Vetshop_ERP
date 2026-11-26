@@ -3,9 +3,11 @@ import { FileUp, Paperclip, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { mensajeDeError, recetasAPI } from '../../services/api';
 import { NOMBRES_ESTADO_RECETA, formatearCantidad, formatearFecha } from '../../utils/formato';
+import { useDialogo } from '../../contexts/DialogoContext';
 
 // Detalle de una receta: medicamentos y entregas, archivo, validación (médico + PIN) y cancelación.
 export default function RecetaDetalle({ receta: inicial, alCerrar, alCambiar, alEditar }) {
+  const { pedirTexto } = useDialogo();
   const [receta, setReceta] = useState(inicial);
   const [medico, setMedico] = useState('');
   const [pin, setPin] = useState('');
@@ -62,7 +64,7 @@ export default function RecetaDetalle({ receta: inicial, alCerrar, alCambiar, al
   };
 
   const cancelar = async () => {
-    const motivo = window.prompt('¿Por qué se cancela la receta?');
+    const motivo = await pedirTexto('¿Por qué se cancela la receta?', { minimo: 3, textoAceptar: 'Cancelar receta', textoCancelar: 'Volver', peligro: true });
     if (!motivo) return;
     try {
       actualizar((await recetasAPI.cancelar(receta.id, motivo)).data.datos);

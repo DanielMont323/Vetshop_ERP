@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { mensajeDeError, sucursalesAPI, usuariosAPI } from '../../services/api';
+import { useDialogo } from '../../contexts/DialogoContext';
 
 const ROLES = [['cajero', 'Cajero'], ['almacen', 'Almacén'], ['medico_responsable', 'Médico responsable'], ['dueno', 'Dueño']];
 const nombreRol = r => ROLES.find(x => x[0] === r)?.[1] || r;
@@ -9,6 +10,7 @@ const campo = 'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2';
 
 // Usuarios: alta, edición (rol, sucursales, activo) y restablecer contraseña. Solo el dueño.
 export default function Usuarios() {
+  const { pedirTexto } = useDialogo();
   const [usuarios, setUsuarios] = useState([]);
   const [sucursales, setSucursales] = useState([]);
   const [editando, setEditando] = useState(null); // null | 'nuevo' | usuario
@@ -30,7 +32,7 @@ export default function Usuarios() {
   const nombreSucursal = id => sucursales.find(s => s.id === String(id))?.nombre || '—';
 
   const restablecer = async u => {
-    const nueva = window.prompt(`Contraseña nueva para ${u.nombre} (mínimo 8 caracteres). Cerrará sus sesiones abiertas.`);
+    const nueva = await pedirTexto(`Contraseña nueva para ${u.nombre} (mínimo 8 caracteres). Cerrará sus sesiones abiertas.`, { minimo: 8, maximo: 128, secreto: true, textoAceptar: 'Restablecer' });
     if (!nueva) return;
     try {
       await usuariosAPI.restablecerPassword(u.id, nueva);

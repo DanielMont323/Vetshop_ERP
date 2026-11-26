@@ -2,9 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { mensajeDeError, sucursalesAPI } from '../../services/api';
+import { useDialogo } from '../../contexts/DialogoContext';
 
 // Sucursales: alta, renombrar y activar/desactivar. Solo el dueño.
 export default function Sucursales() {
+  const { pedirTexto } = useDialogo();
   const { recargarPerfil } = useAuth();
   const [lista, setLista] = useState([]);
   const [nombre, setNombre] = useState('');
@@ -48,8 +50,8 @@ export default function Sucursales() {
     }
   };
 
-  const renombrar = s => {
-    const nuevo = window.prompt('Nuevo nombre de la sucursal', s.nombre);
+  const renombrar = async s => {
+    const nuevo = await pedirTexto('Nuevo nombre de la sucursal', { valorInicial: s.nombre, maximo: 80 });
     if (nuevo && nuevo.trim() !== s.nombre) cambiar(s, { nombre: nuevo.trim() }, 'Sucursal renombrada');
   };
 
