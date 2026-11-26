@@ -3,6 +3,7 @@ import { Plus, Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { clientesAPI, mensajeDeError } from '../../services/api';
 import { LISTAS_PRECIO, centavosATexto, formatearDinero, pesosACentavos } from '../../utils/formato';
+import { REGIMENES, USOS_CFDI } from '../../utils/sat';
 
 const TIPOS = [['publico', 'Público'], ['clinica', 'Clínica'], ['veterinaria', 'Veterinaria'], ['petshop', 'Petshop'], ['estetica', 'Estética'], ['empleado', 'Empleado']];
 const nombreTipo = t => TIPOS.find(x => x[0] === t)?.[1] || t;
@@ -64,6 +65,10 @@ function FormularioCliente({ cliente, alCerrar, alGuardar }) {
     nombre: cliente?.nombre || '', tipo: cliente?.tipo || 'publico', listaPrecios: cliente?.listaPrecios || 'publico',
     rfc: cliente?.rfc || '', telefono: cliente?.telefono || '', email: cliente?.email || '', activo: cliente?.activo ?? true
   });
+  const [fiscal, setFiscal] = useState({
+    razonSocial: cliente?.fiscal?.razonSocial || '', regimen: cliente?.fiscal?.regimen || '',
+    codigoPostal: cliente?.fiscal?.codigoPostal || '', usoCfdi: cliente?.fiscal?.usoCfdi || 'G03'
+  });
   const cr = cliente?.credito;
   const [credito, setCredito] = useState({
     activo: cr?.activo ?? false,
@@ -88,7 +93,8 @@ function FormularioCliente({ cliente, alCerrar, alGuardar }) {
         credito: {
           activo: credito.activo, limite: Number.isNaN(limite) ? 0 : limite, dias: Number(credito.dias) || 30,
           bonificacionProntoPago: bonificacion, diasProntoPago: Number(credito.diasProntoPago) || 0
-        }
+        },
+        fiscal: { ...fiscal, razonSocial: fiscal.razonSocial.trim(), codigoPostal: fiscal.codigoPostal.trim() }
       };
       if (cliente) await clientesAPI.actualizar(cliente.id, cuerpo);
       else await clientesAPI.crear(cuerpo);
@@ -103,7 +109,7 @@ function FormularioCliente({ cliente, alCerrar, alGuardar }) {
 
   return (
     <div className="fixed inset-0 bg-slate-900/40 grid place-items-center p-4 z-20" role="dialog" aria-modal="true">
-      <form onSubmit={guardar} className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 space-y-3">
+      <form onSubmit={guardar} className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 space-y-3 max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">{cliente ? cliente.nombre : 'Nuevo cliente'}</h2>
           <button type="button" onClick={alCerrar} aria-label="Cerrar" className="text-slate-500"><X /></button>
@@ -121,6 +127,22 @@ function FormularioCliente({ cliente, alCerrar, alGuardar }) {
             <input className={campo} value={f.telefono} onChange={e => setF({ ...f, telefono: e.target.value })} maxLength={20} /></label>
           <label className="col-span-2 block text-sm"><span className="font-medium">Correo</span>
             <input type="email" className={campo} value={f.email} onChange={e => setF({ ...f, email: e.target.value })} /></label>
+          <div className="col-span-2 rounded-lg border border-slate-200 p-3 grid grid-cols-2 gap-3">
+            <p className="col-span-2 text-sm font-medium">Datos para facturar (como en su constancia de situación fiscal)</p>
+            <label className="col-span-2 block text-sm"><span>Razón social</span>
+              <input className={campo} value={fiscal.razonSocial} onChange={e => setFiscal({ ...fiscal, razonSocial: e.target.value })} maxLength={254} placeholder="Sin «S.A. de C.V.» si así viene en la constancia" /></label>
+            <label className="col-span-2 block text-sm"><span>Régimen fiscal</span>
+              <select className={campo} value={fiscal.regimen} onChange={e => setFiscal({ ...fiscal, regimen: e.target.value })}>
+                <option value="">—</option>
+                {Object.entries(REGIMENES).map(([k, n]) => <option key={k} value={k}>{k} · {n}</option>)}
+              </select></label>
+            <label className="block text-sm"><span>Código postal fiscal</span>
+              <input className={campo} value={fiscal.codigoPostal} onChange={e => setFiscal({ ...fiscal, codigoPostal: e.target.value.replace(/\D/g, '').slice(0, 5) })} inputMode="numeric" /></label>
+            <label className="block text-sm"><span>Uso del CFDI</span>
+              <select className={campo} value={fiscal.usoCfdi} onChange={e => setFiscal({ ...fiscal, usoCfdi: e.target.value })}>
+                {Object.entries(USOS_CFDI).map(([k, n]) => <option key={k} value={k}>{k} · {n}</option>)}
+              </select></label>
+          </div>
           <div className="col-span-2 rounded-lg border border-slate-200 p-3 grid grid-cols-2 gap-3">
             <label className="col-span-2 flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={credito.activo} onChange={e => setCredito({ ...credito, activo: e.target.checked })} /> Tiene crédito</label>
             {credito.activo && (

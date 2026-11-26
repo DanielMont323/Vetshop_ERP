@@ -24,6 +24,8 @@ import Conteos from './pages/Conteos';
 import CadenaFrio from './pages/CadenaFrio';
 import ComprasSugeridas from './pages/ComprasSugeridas';
 import Metas from './pages/Metas';
+import Facturas from './pages/Facturas';
+import Autofactura from './pages/Autofactura';
 import MiAvance from './components/metas/MiAvance';
 
 function Inicio() {
@@ -46,6 +48,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/autofactura" element={<Autofactura />} />
           <Route element={<Layout />}>
             <Route path="/" element={<Inicio />} />
             <Route path="/cambiar-password" element={<><CambiarPassword /><MiPin /></>} />
@@ -67,6 +70,7 @@ export default function App() {
             <Route path="/cadena-frio" element={<CadenaFrio />} />
             <Route path="/compras-sugeridas" element={<ComprasSugeridas />} />
             <Route path="/metas" element={<Metas />} />
+            <Route path="/facturas" element={<Facturas />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

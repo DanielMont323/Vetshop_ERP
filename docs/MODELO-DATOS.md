@@ -277,6 +277,22 @@ Paso 9 (dashboard y reportes) — no agrega colecciones; agrega sobre `Venta`, `
   (vendido / días transcurridos × días del mes, solo el mes en curso) y ranking. Tablero: metas del mes; inicio del
   cajero: su propia meta.
 
+### Facturación CFDI 4.0 (Fase 2, Paso 17)
+
+- `Cliente.fiscal`: razón social, régimen, código postal y uso del CFDI. `Producto.claveSat` y `claveUnidadSat`
+  (sin clave: 01010101 y H87/KGM). Catálogos en `backend/config/sat.js`.
+- **`Factura`** (`facturas`, por sucursal): tipo I/E/P, modalidad (cliente, global, autofactura, nota_credito, pago),
+  serie (F, NC, CP) y folio por sucursal, receptor (copia), ventas, conceptos (importe base e IVA por concepto),
+  forma y método de pago, relacionados (nota de crédito 01), pago (complemento con parcialidad y saldos), `saldo` y
+  `acreditado` de la factura original, estado `pendiente → timbrada | error → cancelada`, UUID, `xmlClave`.
+- **`Venta.factura`**: la factura que la incluye; una venta facturada no entra en otra factura y no se cancela hasta
+  cancelar el CFDI. Cancelar el CFDI la libera.
+- Emisión: transacción (folio, reserva de ventas o saldo) → PAC (fuera de la transacción) → timbrada, o error con la
+  reserva liberada. PAC detrás de `services/pac/` (simulado o Facturapi).
+- Global: ventas de contado sin factura de días cerrados de un mes, un concepto por ticket (01010101/ACT, «Venta»).
+  Autofactura: página pública (`/autofactura`), ticket del mes por sucursal + folio + total, límite de intentos por IP
+  (`intentos_autofactura`, TTL 15 min), descarga con el UUID.
+
 Pasos siguientes (diseño acordado): ver la tabla del plan. Ajustes ya decididos:
 - `Venta.partidas[]` guarda copia de precio unitario, lista de precios, tasa de IVA y descuento.
 - `Receta.partidas[]`: producto, cantidad prescrita, cantidad entregada, lote.
