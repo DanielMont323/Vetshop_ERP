@@ -96,7 +96,7 @@ async function sembrar({ password, pinDueno, pinMedico }) {
     { nombre: 'Clínica Patitas (prueba)', tipo: 'clinica', listaPrecios: 'clinica' },
     { nombre: 'Estética Peludos (prueba)', tipo: 'estetica', listaPrecios: 'mayoreo' }
   ]);
-  await sembrarFase2({ centro, norte, almacen, productos });
+  await sembrarFase2({ centro, norte, almacen, productos, pinDueno, pinMedico });
   return usuarios.map(u => u.usuario);
 }
 

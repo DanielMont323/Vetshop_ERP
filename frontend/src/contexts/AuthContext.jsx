@@ -22,7 +22,9 @@ export function AuthProvider({ children }) {
       setUsuario(perfil);
       const guardada = localStorage.getItem(CLAVE_SUCURSAL);
       const valida = perfil.sucursales.some(s => s.id === guardada);
-      elegirSucursal(valida ? guardada : perfil.sucursales[0]?.id || null);
+      // Por defecto, la primera tienda (en el almacén no hay ventas que mostrar)
+      const porDefecto = perfil.sucursales.find(s => s.tipo === 'tienda') || perfil.sucursales[0];
+      elegirSucursal(valida ? guardada : porDefecto?.id || null);
     },
     [elegirSucursal]
   );
