@@ -69,6 +69,9 @@ const ventaSchema = new mongoose.Schema({
   turno: { type: mongoose.Schema.Types.ObjectId, ref: 'Turno', default: null }, // Paso 7
   cajero: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
   cajeroNombre: { type: String, required: true },
+  // Vendedor al que se atribuye la venta (metas). Si no se eligió en la caja, cuenta para el cajero.
+  vendedor: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
+  vendedorNombre: String,
   cliente: { type: mongoose.Schema.Types.ObjectId, ref: 'Cliente', required: true },
   clienteNombre: { type: String, required: true },
   listaPrecios: { type: String, required: true },

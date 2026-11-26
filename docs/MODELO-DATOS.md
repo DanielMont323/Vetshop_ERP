@@ -266,6 +266,17 @@ Paso 9 (dashboard y reportes) — no agrega colecciones; agrega sobre `Venta`, `
   los almacenes para pedirlo por traspaso. «Crear borrador» abre la recepción precargada (no se guarda hasta que el
   usuario la guarda).
 
+### Metas (Fase 2, Paso 16)
+
+- **`Meta`** (`metas`, por sucursal): `periodo` 'AAAA-MM', `vendedor` (null = meta de la sucursal), `monto` en centavos
+  (venta con IVA), `tickets` opcional. Único por sucursal + periodo + vendedor. Solo el dueño (`metas:gestionar`);
+  monto 0 la quita; bitácora.
+- **`Venta.vendedor` / `vendedorNombre`** (opcional): se elige en la caja entre los usuarios activos de la sucursal; si
+  no se elige, la venta cuenta para el cajero.
+- Avance: vendido y tickets del mes por sucursal y por vendedor, porcentaje, proyección al cierre
+  (vendido / días transcurridos × días del mes, solo el mes en curso) y ranking. Tablero: metas del mes; inicio del
+  cajero: su propia meta.
+
 Pasos siguientes (diseño acordado): ver la tabla del plan. Ajustes ya decididos:
 - `Venta.partidas[]` guarda copia de precio unitario, lista de precios, tasa de IVA y descuento.
 - `Receta.partidas[]`: producto, cantidad prescrita, cantidad entregada, lote.

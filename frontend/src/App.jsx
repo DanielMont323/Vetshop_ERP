@@ -23,6 +23,8 @@ import CuentasPorPagar from './pages/CuentasPorPagar';
 import Conteos from './pages/Conteos';
 import CadenaFrio from './pages/CadenaFrio';
 import ComprasSugeridas from './pages/ComprasSugeridas';
+import Metas from './pages/Metas';
+import MiAvance from './components/metas/MiAvance';
 
 function Inicio() {
   const { usuario, sucursalActiva, puede } = useAuth();
@@ -32,6 +34,7 @@ function Inicio() {
     <section>
       <h2 className="text-lg font-semibold">Hola, {usuario.nombre}</h2>
       <p className="text-slate-600">Trabajando en: {sucursal ? sucursal.nombre : 'ninguna sucursal'}</p>
+      {puede('ventas:cobrar') && sucursal && <MiAvance />}
     </section>
   );
 }
@@ -63,6 +66,7 @@ export default function App() {
             <Route path="/conteos" element={<Conteos />} />
             <Route path="/cadena-frio" element={<CadenaFrio />} />
             <Route path="/compras-sugeridas" element={<ComprasSugeridas />} />
+            <Route path="/metas" element={<Metas />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

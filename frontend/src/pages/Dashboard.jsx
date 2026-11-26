@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { mensajeDeError, reportesAPI } from '../services/api';
 import { formatearDinero } from '../utils/formato';
 import GraficaBarras from '../components/reportes/GraficaBarras';
+import BarraAvance from '../components/metas/BarraAvance';
 
 const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 // "2026-11-25" → "mar 25"
@@ -73,6 +74,18 @@ export default function Dashboard() {
         <h3 className="font-semibold mb-2">Ventas de los últimos 7 días</h3>
         <GraficaBarras datos={ultimos7} etiqueta={etiquetaDia} />
       </div>
+
+      {datos.metas?.length > 0 && (
+        <div className="bg-white rounded-xl shadow p-4 space-y-3">
+          <div className="flex items-baseline gap-3">
+            <h3 className="font-semibold mr-auto">Metas del mes</h3>
+            <Link to="/metas" className="text-sm text-emerald-700 underline">Ver metas</Link>
+          </div>
+          {datos.metas.map(m => (
+            <BarraAvance key={m.sucursal.id} vendido={m.vendido} meta={m.meta} proyeccion={m.proyeccion} etiqueta={`${m.sucursal.nombre}: `} />
+          ))}
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow p-4">
         <h3 className="font-semibold mb-2">Alertas</h3>
