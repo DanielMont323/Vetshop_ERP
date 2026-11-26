@@ -1,6 +1,6 @@
 // Cálculos de VISTA PREVIA de la caja (mismas reglas que el servidor: centavos enteros, half-up).
 // El total que vale es el que devuelve el servidor al cobrar.
-import { turnosAPI, ventasAPI } from '../services/api';
+import { cobranzaAPI, turnosAPI, ventasAPI } from '../services/api';
 
 const dividir = (n, d) => Math.floor(n / d) + ((n % d) * 2 >= d ? 1 : 0);
 
@@ -52,6 +52,16 @@ export async function imprimirTicket(ventaId, ancho = 80) {
 
 export async function imprimirCorte(turnoId, ancho = 80) {
   const { data } = await turnosAPI.corte(turnoId, ancho);
+  await imprimirHtml(data);
+}
+
+export async function imprimirAbono(abonoId, ancho = 80) {
+  const { data } = await cobranzaAPI.comprobante(abonoId, ancho);
+  await imprimirHtml(data);
+}
+
+export async function imprimirEstadoCuenta(clienteId, params) {
+  const { data } = await cobranzaAPI.impresion(clienteId, params);
   await imprimirHtml(data);
 }
 

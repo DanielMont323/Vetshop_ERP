@@ -20,6 +20,7 @@ export default function Caja() {
   const { sucursalActiva } = useAuth();
   const [clientes, setClientes] = useState([]);
   const [clienteId, setClienteId] = useState('');
+  const [creditoPendiente, setCreditoPendiente] = useState(null);
   const [lineas, setLineas] = useState([]);
   const [esperaId, setEsperaId] = useState(null);
   const [cobrando, setCobrando] = useState(false);
@@ -99,22 +100,25 @@ export default function Caja() {
     ...(l.receta && { receta: l.receta.id })
   }));
 
-  const cobrar = async (pagos, autorizacion) => {
+  const cobrar = async (pagos, autorizacion, autorizacionCredito) => {
     setCobrando(true);
     try {
       const esPublico = clientes[0]?.id === clienteId;
       const r = await ventasAPI.cobrar({
         claveOperacion: clave, cliente: esPublico ? undefined : clienteId, partidas: partidasApi(), pagos,
-        ...(autorizacion && { autorizacion }), ...(esperaId && { esperaId })
+        ...(autorizacion && { autorizacion }), ...(autorizacionCredito && { autorizacionCredito }), ...(esperaId && { esperaId })
       });
       const venta = r.data.datos;
       setUltima(venta);
       setPanel(null);
+      setCreditoPendiente(null);
       setClave(nuevaClaveOperacion());
       limpiar();
       toast.success(`Venta ${venta.serie}-${venta.folio} cobrada${venta.cambio ? ` · Cambio ${formatearDinero(venta.cambio)}` : ''}`, { duration: 6000 });
       if (imprimir) imprimirTicket(venta.id).catch(() => toast.error('No se pudo imprimir el ticket'));
     } catch (e) {
+      // Crédito por encima del límite o con saldo vencido: el panel pide el PIN del dueño y se reintenta
+      if (e.response?.data?.codigo === 'CREDITO_REQUIERE_AUTORIZACION') setCreditoPendiente({ mensaje: e.response.data.mensaje, ...e.response.data.detalles });
       toast.error(mensajeDeError(e, 'No se pudo cobrar'), { duration: 6000 });
     } finally {
       setCobrando(false);
@@ -222,7 +226,7 @@ export default function Caja() {
       </aside>
 
       {panel === 'cobro' && (
-        <PanelCobro total={total} pideAutorizacion={descuentoTotal > 0} cobrando={cobrando} alCobrar={cobrar} alCerrar={() => { setPanel(null); enfocar('buscador-caja'); }} />
+        <PanelCobro total={total} cliente={cliente} pideAutorizacion={descuentoTotal > 0} creditoPendiente={creditoPendiente} cobrando={cobrando} alCobrar={cobrar} alCerrar={() => { setPanel(null); setCreditoPendiente(null); enfocar('buscador-caja'); }} />
       )}
       {panel === 'espera' && <VentasEspera alRecuperar={recuperar} alCerrar={() => setPanel(null)} />}
       {lineaReceta && (

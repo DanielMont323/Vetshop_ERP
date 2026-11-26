@@ -8,7 +8,7 @@ import { formatearDinero, formatearFecha, hoyLocal } from '../utils/formato';
 import { imprimirTicket } from '../utils/caja';
 import CorregirFormaPago from '../components/caja/CorregirFormaPago';
 
-const METODOS = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia' };
+const METODOS = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', credito: 'A crédito' };
 
 // Ventas: el cajero ve las suyas de hoy; el dueño elige el día y ve todas (con margen).
 export default function VentasDia() {

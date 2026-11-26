@@ -46,6 +46,7 @@ export default function ResultadoCorte({ turno, alCerrar }) {
       </div>
       <p className="text-sm text-slate-600">
         Conteo: {formatearFecha(c.fecha, true)} · {c.ventas} venta{c.ventas === 1 ? '' : 's'} · {c.canceladas} cancelada{c.canceladas === 1 ? '' : 's'}
+        {c.abonos ? ` · ${c.abonos} abono${c.abonos === 1 ? '' : 's'} de clientes` : ''}
       </p>
       <table className="w-full text-sm">
         <thead className="bg-slate-100 text-left">
