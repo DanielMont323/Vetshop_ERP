@@ -12,7 +12,11 @@
     "start": "node server.js",
     "dev:memoria": "node scripts/devMemoria.js",
     "test": "jest",
-    "crear-dueno": "node scripts/crearDueno.js"
+    "crear-dueno": "node scripts/crearDueno.js",
+    "importar": "node scripts/importar.js",
+    "plantilla-importacion": "node scripts/plantillaImportacion.js",
+    "seed-demo": "node scripts/seedDemo.js",
+    "preparar-bd": "node scripts/prepararBD.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

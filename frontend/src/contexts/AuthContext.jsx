@@ -55,9 +55,15 @@ export function AuthProvider({ children }) {
 
   const puede = useCallback(permiso => Boolean(usuario?.permisos.includes(permiso)), [usuario]);
 
+  // Tras crear o desactivar sucursales: vuelve a pedir el perfil para actualizar el selector
+  const recargarPerfil = useCallback(async () => {
+    const res = await authAPI.perfil();
+    aplicarPerfil(res.data.datos);
+  }, [aplicarPerfil]);
+
   const valor = useMemo(
-    () => ({ usuario, cargando, sucursalActiva, elegirSucursal, iniciarSesion, cerrarSesion, reemplazarToken, puede }),
-    [usuario, cargando, sucursalActiva, elegirSucursal, iniciarSesion, cerrarSesion, reemplazarToken, puede]
+    () => ({ usuario, cargando, sucursalActiva, elegirSucursal, iniciarSesion, cerrarSesion, reemplazarToken, puede, recargarPerfil }),
+    [usuario, cargando, sucursalActiva, elegirSucursal, iniciarSesion, cerrarSesion, reemplazarToken, puede, recargarPerfil]
   );
 
   return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;
