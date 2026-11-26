@@ -26,6 +26,9 @@ const PERMISOS = [
   'traspasos:gestionar',
   'conteo_fisico:capturar',
   'conteo_fisico:aplicar',
+  // Cadena de frío
+  'cadena_frio:capturar',
+  'cadena_frio:gestionar_equipos',
   // Recetas
   'recetas:capturar',
   'recetas:validar',
@@ -51,7 +54,7 @@ const PERMISOS = [
 const MATRIZ = {
   cajero: [
     'ventas:cobrar', 'ventas:ver_propias_del_dia', 'existencias:ver', 'corte:capturar_conteo', 'catalogo:ver', 'recetas:capturar',
-    'credito:vender', 'cobranza:registrar_abono'
+    'credito:vender', 'cobranza:registrar_abono', 'cadena_frio:capturar'
   ],
   almacen: [
     'inventario:entradas',
@@ -60,9 +63,10 @@ const MATRIZ = {
     'traspasos:gestionar',
     'conteo_fisico:capturar',
     'existencias:ver',
-    'catalogo:ver'
+    'catalogo:ver',
+    'cadena_frio:capturar'
   ],
-  medico_responsable: ['recetas:capturar', 'recetas:validar', 'existencias:ver', 'catalogo:ver'],
+  medico_responsable: ['recetas:capturar', 'recetas:validar', 'existencias:ver', 'catalogo:ver', 'cadena_frio:capturar'],
   dueno: [...PERMISOS] // todo, incluidas las autorizaciones
 };
 
