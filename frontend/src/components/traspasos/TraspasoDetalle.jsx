@@ -4,10 +4,12 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { mensajeDeError, traspasosAPI } from '../../services/api';
 import { NOMBRES_ESTADO_TRASPASO, baseATexto, cantidadABase, formatearCantidad, formatearFecha } from '../../utils/formato';
+import { useDialogo } from '../../contexts/DialogoContext';
 
 // Detalle del traspaso. Destino en tránsito: capturar lo recibido por lote. Origen en tránsito: cancelar.
 // Con diferencia: autorizar con PIN del dueño.
 export default function TraspasoDetalle({ traspaso: inicial, alCerrar, alCambiar }) {
+  const { pedirTexto } = useDialogo();
   const { sucursalActiva } = useAuth();
   const [t, setT] = useState(inicial);
   const [recibidos, setRecibidos] = useState(() => inicial.partidas.map(p => p.lotes.map(l => baseATexto(l.enviado, p.unidad))));
@@ -51,8 +53,8 @@ export default function TraspasoDetalle({ traspaso: inicial, alCerrar, alCambiar
       r => (r.estado === 'recibido' ? 'Recibido completo: ya está en el inventario' : 'Recibido con diferencia: falta que el dueño la autorice'));
   };
 
-  const cancelar = () => {
-    const motivo = window.prompt('¿Por qué se cancela el traspaso?');
+  const cancelar = async () => {
+    const motivo = await pedirTexto('¿Por qué se cancela el traspaso?', { minimo: 3, textoAceptar: 'Cancelar traspaso', textoCancelar: 'Volver', peligro: true });
     if (motivo) ejecutar(() => traspasosAPI.cancelar(t.id, motivo), () => 'Traspaso cancelado: la mercancía regresó a esta sucursal');
   };
 

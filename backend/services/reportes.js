@@ -10,6 +10,7 @@ const Traspaso = require('../models/Traspaso');
 const { matchAlcance, conAlcance } = require('../helpers/alcance');
 const { ZONA, rangoDia, rangoDias, diaLocal } = require('../helpers/fechas');
 const existencias = require('./existencias');
+const cuentasPorPagar = require('./cuentasPorPagar');
 
 const TIPOS_DISTRIBUCION = ['clinica', 'veterinaria', 'petshop', 'estetica'];
 const FORMATOS = { dia: '%Y-%m-%d', semana: '%G-S%V', mes: '%Y-%m', anio: '%Y' };
@@ -144,14 +145,15 @@ async function resumen(alcance, { desde, hasta, agrupar = 'dia' } = {}) {
 async function dashboard(alcance, ahora = new Date()) {
   const hoy = rangoDia(ahora);
   const hace7 = { inicio: new Date(hoy.inicio.getTime() - 6 * DIA_MS), fin: hoy.fin };
-  const [deHoy, semana, filasExistencias, cortesPendientes, cortesConDiferencia, recetasPendientes, traspasosPorRecibir] = await Promise.all([
+  const [deHoy, semana, filasExistencias, cortesPendientes, cortesConDiferencia, recetasPendientes, traspasosPorRecibir, porPagar] = await Promise.all([
     totales(alcance, hoy),
     porPeriodo(alcance, hace7, 'dia'),
     existencias.listar(alcance, { ahora }),
     Turno.countDocuments(conAlcance({ estado: 'contado' }, alcance)),
     Turno.countDocuments(conAlcance({ estado: 'cerrado', 'cierre.justificacion': { $exists: true }, 'cierre.fecha': { $gte: hace7.inicio } }, alcance)),
     Receta.countDocuments(conAlcance({ estado: 'pendiente' }, alcance)),
-    Traspaso.countDocuments(conAlcance({ estado: 'en_transito' }, alcance, 'destino'))
+    Traspaso.countDocuments(conAlcance({ estado: 'en_transito' }, alcance, 'destino')),
+    cuentasPorPagar.alertas(ahora)
   ]);
   const cuenta = alerta => filasExistencias.filter(f => f.alertas.includes(alerta)).length;
   return {
@@ -164,7 +166,8 @@ async function dashboard(alcance, ahora = new Date()) {
       cortesPendientes,
       cortesConDiferencia,
       recetasPendientes,
-      traspasosPorRecibir
+      traspasosPorRecibir,
+      ...porPagar
     }
   };
 }

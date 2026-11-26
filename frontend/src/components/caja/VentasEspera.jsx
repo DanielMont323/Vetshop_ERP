@@ -3,9 +3,11 @@ import { X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { mensajeDeError, ventasAPI } from '../../services/api';
 import { formatearFecha } from '../../utils/formato';
+import { useDialogo } from '../../contexts/DialogoContext';
 
 // Lista de ventas en espera de la sucursal: recuperar al carrito o borrar.
 export default function VentasEspera({ alRecuperar, alCerrar }) {
+  const { confirmar } = useDialogo();
   const [lista, setLista] = useState(null);
 
   const cargar = () =>
@@ -19,7 +21,7 @@ export default function VentasEspera({ alRecuperar, alCerrar }) {
   }, []);
 
   const borrar = async id => {
-    if (!window.confirm('¿Borrar esta venta en espera?')) return;
+    if (!(await confirmar('¿Borrar esta venta en espera?', { textoAceptar: 'Borrar', peligro: true }))) return;
     try {
       await ventasAPI.eliminarEspera(id);
       cargar();

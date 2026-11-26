@@ -202,6 +202,14 @@ export const cobranzaAPI = {
   comprobante: (id, ancho = 80) => api.get(`/cobranza/abonos/${id}/comprobante`, { params: { ancho }, responseType: 'text' })
 };
 
+export const cuentasPagarAPI = {
+  listar: params => api.get('/cuentas-por-pagar', { params }),
+  excel: () => api.get('/cuentas-por-pagar/excel', { responseType: 'blob', timeout: 60000 }),
+  pagos: params => api.get('/cuentas-por-pagar/pagos', { params }),
+  pagar: datos => api.post('/cuentas-por-pagar/pagos', datos),
+  cancelarPago: (id, datos) => api.post(`/cuentas-por-pagar/pagos/${id}/cancelar`, datos)
+};
+
 export const reportesAPI = {
   dashboard: () => api.get('/reportes/dashboard'),
   ventas: params => api.get('/reportes/ventas', { params }),

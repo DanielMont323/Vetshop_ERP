@@ -22,6 +22,9 @@ async function main() {
     const indices = await modelo.collection.indexes();
     console.log(`  ${existentes.has(nombre) ? '=' : '+'} ${nombre.padEnd(22)} ${indices.length} índice(s)`);
   }
+  // Datos que agregan los módulos nuevos (seguros de repetir)
+  const cuentas = await require('../services/cuentasPorPagar').generarFaltantes();
+  if (cuentas) console.log(`  Cuentas por pagar creadas de compras ya recibidas: ${cuentas}`);
   console.log('Listo.');
 }
 

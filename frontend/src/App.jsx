@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { DialogoProvider } from './contexts/DialogoContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import CambiarPassword, { MiPin } from './pages/CambiarPassword';
@@ -18,6 +19,7 @@ import Traspasos from './pages/Traspasos';
 import Dashboard from './pages/Dashboard';
 import Reportes from './pages/Reportes';
 import Cobranza from './pages/Cobranza';
+import CuentasPorPagar from './pages/CuentasPorPagar';
 
 function Inicio() {
   const { usuario, sucursalActiva, puede } = useAuth();
@@ -34,6 +36,7 @@ function Inicio() {
 export default function App() {
   return (
     <AuthProvider>
+      <DialogoProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -53,11 +56,13 @@ export default function App() {
             <Route path="/traspasos" element={<Traspasos />} />
             <Route path="/reportes" element={<Reportes />} />
             <Route path="/cobranza" element={<Cobranza />} />
+            <Route path="/cuentas-por-pagar" element={<CuentasPorPagar />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
       <Toaster position="top-right" />
+      </DialogoProvider>
     </AuthProvider>
   );
 }

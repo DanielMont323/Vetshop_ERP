@@ -42,6 +42,7 @@ const PERMISOS = [
   'sucursales:gestionar',
   'catalogo:gestionar',
   'clientes:gestionar',
+  'cuentas_pagar:gestionar',
   'auditoria:ver',
   'reportes:ver'
 ];
