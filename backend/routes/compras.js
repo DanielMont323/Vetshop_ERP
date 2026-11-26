@@ -6,6 +6,8 @@ const { validar } = require('../middleware/validar');
 const { requirePermiso } = require('../middleware/permisos');
 const compras = require('../services/compras');
 const { ESTADOS } = require('../models/Compra');
+const { CATEGORIAS } = require('../models/Producto');
+const sugeridos = require('../services/sugeridos');
 
 const router = express.Router();
 router.use(requirePermiso('recepcion:registrar'));
@@ -43,6 +45,20 @@ router.get(
   ]),
   async (req, res) => {
     res.json({ ok: true, ...(await compras.listar(req.alcance, req.datos)) });
+  }
+);
+
+// GET /api/compras/sugeridas?dias=30&cobertura=15&categoria=…&todos=true — compras sugeridas de la sucursal
+router.get(
+  '/sugeridas',
+  validar([
+    query('dias').optional().isIn(sugeridos.PERIODOS.map(String)).toInt(),
+    query('cobertura').optional().isInt({ min: 1, max: 120 }).toInt(),
+    query('categoria').optional().isIn(CATEGORIAS),
+    query('todos').optional().isBoolean().toBoolean()
+  ]),
+  async (req, res) => {
+    res.json({ ok: true, ...(await sugeridos.calcular(req.alcance, req.datos)) });
   }
 );
 

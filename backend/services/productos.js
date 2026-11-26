@@ -30,7 +30,7 @@ function publico(p, preciosProducto = {}) {
     requiereRefrigeracion: p.requiereRefrigeracion,
     iva: p.iva,
     activo: p.activo,
-    minimos: (p.minimos || []).map(m => ({ sucursal: m.sucursal, cantidad: m.cantidad })),
+    minimos: (p.minimos || []).map(m => ({ sucursal: m.sucursal, cantidad: m.cantidad, maximo: m.maximo || null })),
     precios: preciosProducto
   };
 }

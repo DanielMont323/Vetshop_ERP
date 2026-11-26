@@ -22,6 +22,7 @@ import Cobranza from './pages/Cobranza';
 import CuentasPorPagar from './pages/CuentasPorPagar';
 import Conteos from './pages/Conteos';
 import CadenaFrio from './pages/CadenaFrio';
+import ComprasSugeridas from './pages/ComprasSugeridas';
 
 function Inicio() {
   const { usuario, sucursalActiva, puede } = useAuth();
@@ -61,6 +62,7 @@ export default function App() {
             <Route path="/cuentas-por-pagar" element={<CuentasPorPagar />} />
             <Route path="/conteos" element={<Conteos />} />
             <Route path="/cadena-frio" element={<CadenaFrio />} />
+            <Route path="/compras-sugeridas" element={<ComprasSugeridas />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

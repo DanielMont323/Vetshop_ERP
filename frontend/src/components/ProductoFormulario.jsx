@@ -24,7 +24,8 @@ function estadoInicial(p) {
     requiereRefrigeracion: p?.requiereRefrigeracion || false,
     activo: p?.activo ?? true,
     precios: Object.fromEntries(LISTAS_PRECIO.map(l => [l.clave, centavosATexto(p?.precios?.[l.clave])])),
-    minimos: Object.fromEntries((p?.minimos || []).map(m => [m.sucursal, baseATexto(m.cantidad, p.unidad)]))
+    minimos: Object.fromEntries((p?.minimos || []).map(m => [m.sucursal, baseATexto(m.cantidad, p.unidad)])),
+    maximos: Object.fromEntries((p?.minimos || []).filter(m => m.maximo).map(m => [m.sucursal, baseATexto(m.maximo, p.unidad)]))
   };
 }
 
@@ -39,12 +40,16 @@ function aCuerpo(f, original) {
     if (c !== antes) precios[clave] = c; // null = quitar el precio de esa lista
   }
   const minimos = [];
-  for (const [sucursal, texto] of Object.entries(f.minimos)) {
-    const cantidad = cantidadABase(texto, f.unidad);
-    if (Number.isNaN(cantidad)) return { error: `Mínimo inválido (${f.unidad === 'kg' ? 'kg con hasta 3 decimales' : 'piezas enteras'})` };
-    if (cantidad !== null) minimos.push({ sucursal, cantidad });
+  const formato = f.unidad === 'kg' ? 'kg con hasta 3 decimales' : 'piezas enteras';
+  for (const sucursal of new Set([...Object.keys(f.minimos), ...Object.keys(f.maximos)])) {
+    const cantidad = cantidadABase(f.minimos[sucursal], f.unidad);
+    const maximo = cantidadABase(f.maximos[sucursal], f.unidad);
+    if (Number.isNaN(cantidad)) return { error: `Mínimo inválido (${formato})` };
+    if (Number.isNaN(maximo)) return { error: `Máximo inválido (${formato})` };
+    if (maximo && maximo < (cantidad || 0)) return { error: 'El máximo no puede ser menor que el mínimo' };
+    if (cantidad !== null || maximo) minimos.push({ sucursal, cantidad: cantidad || 0, ...(maximo && { maximo }) });
   }
-  const { precios: _p, minimos: _m, ...resto } = f;
+  const { precios: _p, minimos: _m, maximos: _x, ...resto } = f;
   return { cuerpo: { ...resto, codigoBarras: f.codigoBarras.trim(), precios, minimos } };
 }
 
@@ -162,17 +167,29 @@ export default function ProductoFormulario({ producto, alCerrar, alGuardar }) {
 
           {usuario.sucursales.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold mb-2">Existencia mínima por sucursal ({f.unidad === 'kg' ? 'kg' : 'piezas'})</h3>
+              <h3 className="text-sm font-semibold mb-2">Existencia mínima y máxima por sucursal ({f.unidad === 'kg' ? 'kg' : 'piezas'})</h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {usuario.sucursales.map(s => (
                   <label key={s.id} className="block">
                     <span className="text-sm">{s.nombre}</span>
-                    <input
-                      className={campo}
-                      inputMode="decimal"
-                      value={f.minimos[s.id] || ''}
-                      onChange={e => cambiar('minimos', { ...f.minimos, [s.id]: e.target.value })}
-                    />
+                    <span className="flex gap-1">
+                      <input
+                        className={campo}
+                        inputMode="decimal"
+                        placeholder="Mín."
+                        aria-label={`Mínimo en ${s.nombre}`}
+                        value={f.minimos[s.id] || ''}
+                        onChange={e => cambiar('minimos', { ...f.minimos, [s.id]: e.target.value })}
+                      />
+                      <input
+                        className={campo}
+                        inputMode="decimal"
+                        placeholder="Máx."
+                        aria-label={`Máximo en ${s.nombre}`}
+                        value={f.maximos[s.id] || ''}
+                        onChange={e => cambiar('maximos', { ...f.maximos, [s.id]: e.target.value })}
+                      />
+                    </span>
                   </label>
                 ))}
               </div>

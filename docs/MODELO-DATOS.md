@@ -255,6 +255,17 @@ Paso 9 (dashboard y reportes) — no agrega colecciones; agrega sobre `Venta`, `
   de llegada. Producto dañado: ajuste de salida con motivo `cadena_frio`.
 - Tablero: lecturas fuera de rango en 7 días y equipos activos sin lectura hoy.
 
+### Compras sugeridas (Fase 2, Paso 15)
+
+- `Producto.minimos[]` gana `maximo` (opcional, ≥ mínimo, en unidad base).
+- Cálculo en `services/sugeridos.js` (sin colección propia), por sucursal: venta diaria (ventas cobradas de 30/60/90
+  días) × días de cobertura; existencia útil = lotes que no caducan dentro de la cobertura; en camino = traspasos en
+  tránsito hacia la sucursal + compras en borrador. Con máximo: se pide cuando lo disponible baja del mínimo, hasta el
+  máximo; sin máximo: hasta el mayor entre mínimo y necesidad. Piezas enteras, granel a kilos completos.
+- Proveedor habitual y último costo: última compra recibida del producto (cualquier sucursal). Muestra lo que hay en
+  los almacenes para pedirlo por traspaso. «Crear borrador» abre la recepción precargada (no se guarda hasta que el
+  usuario la guarda).
+
 Pasos siguientes (diseño acordado): ver la tabla del plan. Ajustes ya decididos:
 - `Venta.partidas[]` guarda copia de precio unitario, lista de precios, tasa de IVA y descuento.
 - `Receta.partidas[]`: producto, cantidad prescrita, cantidad entregada, lote.
