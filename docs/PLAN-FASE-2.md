@@ -4,6 +4,9 @@ Objetivo: completar los 14 módulos antes de empezar las pruebas con usuarios de
 (`CLAUDE.md`): centavos enteros, fechas en UTC, inventario por movimientos, transacciones, bitácora, filtro de
 sucursal en el servidor, lógica en `services/`, cada endpoint con su prueba. **Una rama y un PR por paso.**
 
+**Estado:** pasos 11 a 18 terminados (PR #12 a #19). Pendientes conocidos en `docs/PENDIENTES.md`; guion para
+las pruebas con usuarios en `docs/GUION-PRUEBAS.md`.
+
 Fuera de esta fase (se deja para después): **modo sin conexión de la caja** (no está en la lista de módulos; la nota
 de folios por caja de `PLAN-FASE-1.md` sigue vigente).
 

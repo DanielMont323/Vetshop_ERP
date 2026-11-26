@@ -4,6 +4,9 @@ ERP con punto de venta para Huellitas Vetshop (comercializadora y farmacia veter
 
 - Reglas y contexto del proyecto: `CLAUDE.md`
 - Plan de la Fase 1 (piloto): `docs/PLAN-FASE-1.md`
+- Plan de la Fase 2 (crédito, cuentas por pagar, conteo, cadena de frío, compras sugeridas, metas, facturación):
+  `docs/PLAN-FASE-2.md`
+- Guion de pruebas por rol: `docs/GUION-PRUEBAS.md`
 - Modelo de datos y decisiones: `docs/MODELO-DATOS.md`
 - Pendientes conocidos: `docs/PENDIENTES.md`
 - Arranque del piloto (lista de verificación): `docs/ARRANQUE-PILOTO.md`
