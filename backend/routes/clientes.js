@@ -8,6 +8,7 @@ const clientes = require('../services/clientes');
 const { TIPOS } = require('../models/Cliente');
 const { CLAVES_LISTA } = require('../models/ListaPrecios');
 const { RE_RFC } = require('../models/Proveedor');
+const { REGIMENES, USOS_CFDI, RE_CP } = require('../config/sat');
 
 const router = express.Router();
 const id = param('id').isMongoId().withMessage('Id de cliente inválido');
@@ -28,7 +29,12 @@ function reglas(opcional) {
     body('credito.limite').optional().custom(entero(0, 100000000)).withMessage('Límite de crédito: centavos enteros ≥ 0'),
     body('credito.dias').optional().custom(entero(1, 180)).withMessage('Plazo: de 1 a 180 días'),
     body('credito.bonificacionProntoPago').optional().custom(entero(0, 2000)).withMessage('Bonificación: puntos base de 0 a 2000 (20 %)'),
-    body('credito.diasProntoPago').optional().custom(entero(0, 60)).withMessage('Días de pronto pago: de 0 a 60')
+    body('credito.diasProntoPago').optional().custom(entero(0, 60)).withMessage('Días de pronto pago: de 0 a 60'),
+    body('fiscal').optional().isObject(),
+    body('fiscal.razonSocial').optional().isString().trim().isLength({ max: 254 }),
+    body('fiscal.regimen').optional().custom(v => v === '' || Object.hasOwn(REGIMENES, v)).withMessage('Régimen fiscal inválido'),
+    body('fiscal.codigoPostal').optional().custom(v => v === '' || RE_CP.test(v)).withMessage('Código postal: 5 dígitos'),
+    body('fiscal.usoCfdi').optional().isIn(Object.keys(USOS_CFDI)).withMessage('Uso de CFDI inválido')
   ];
 }
 

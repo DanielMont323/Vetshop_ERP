@@ -18,7 +18,7 @@ function cantidadTexto(p) {
  * @param {object} venta  venta pública (services/ventas)
  * @param {object} opciones { sucursal: nombre, ancho: 58 | 80 }
  */
-function htmlTicket(venta, { sucursal, ancho = 80 } = {}) {
+function htmlTicket(venta, { sucursal, ancho = 80, urlAutofactura } = {}) {
   const mm = ancho === 58 ? 58 : 80;
   const filas = venta.partidas
     .map(p => {
@@ -65,6 +65,7 @@ function htmlTicket(venta, { sucursal, ancho = 80 } = {}) {
   ${venta.cambio > 0 ? `<div class="f t"><span>Cambio</span><span>${formatear(venta.cambio)}</span></div>` : ''}
   <hr>
   ${venta.aCredito > 0 ? `<div class="centro">Firma de conformidad (crédito):</div><br><div class="centro">______________________</div><hr>` : ''}
+  ${urlAutofactura && venta.estado === 'cobrada' && !venta.aCredito ? `<div class="centro">Factura este ticket en el mes:</div><div class="centro">${escapar(urlAutofactura)}</div><div class="centro">con el folio y el total</div><hr>` : ''}
   <div class="centro">¡Gracias por su compra!</div>
 </body></html>`;
 }

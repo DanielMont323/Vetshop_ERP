@@ -18,6 +18,8 @@ function estadoInicial(p) {
     categoria: p?.categoria || 'accesorio',
     unidad: p?.unidad || 'pieza',
     presentacion: p?.presentacion || '',
+    claveSat: p?.claveSat || '',
+    claveUnidadSat: p?.claveUnidadSat || '',
     iva: p?.iva || 'tasa_16',
     requiereReceta: p?.requiereReceta || false,
     esControlado: p?.esControlado || false,
@@ -111,6 +113,14 @@ export default function ProductoFormulario({ producto, alCerrar, alGuardar }) {
             <label className="block">
               <span className="text-sm font-medium">Presentación</span>
               <input className={campo} value={f.presentacion} onChange={e => cambiar('presentacion', e.target.value)} placeholder="Costal 20 kg, frasco 100 ml…" maxLength={80} />
+            </label>
+            <label className="block">
+              <span className="text-sm font-medium">Clave SAT (facturación)</span>
+              <input className={campo} value={f.claveSat} onChange={e => cambiar('claveSat', e.target.value.replace(/\D/g, '').slice(0, 8))} placeholder="01010101 si no tiene" inputMode="numeric" />
+            </label>
+            <label className="block">
+              <span className="text-sm font-medium">Clave de unidad SAT</span>
+              <input className={campo} value={f.claveUnidadSat} onChange={e => cambiar('claveUnidadSat', e.target.value.toUpperCase().slice(0, 3))} placeholder={f.unidad === 'kg' ? 'KGM' : 'H87'} />
             </label>
             <label className="block">
               <span className="text-sm font-medium">Se vende por</span>

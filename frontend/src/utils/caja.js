@@ -70,6 +70,16 @@ export async function imprimirBitacoraFrio(params) {
   await imprimirHtml(data);
 }
 
+// Documento del servidor (blob): HTML se imprime en el iframe oculto; PDF se abre en otra pestaña
+export async function imprimirDocumento(llamada, nombre = 'documento.pdf') {
+  const { data } = await llamada();
+  if ((data.type || '').includes('html')) return imprimirHtml(await data.text());
+  const url = URL.createObjectURL(data);
+  const ventana = window.open(url, '_blank', 'noopener');
+  if (!ventana) Object.assign(document.createElement('a'), { href: url, download: nombre }).click();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
 // Clave única por intento de cobro (si se reintenta, el servidor no cobra dos veces)
 export const nuevaClaveOperacion = () =>
   (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`);

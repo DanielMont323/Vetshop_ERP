@@ -28,6 +28,8 @@ function reglasProducto(opcional) {
     o(body('unidad').isIn(UNIDADES).withMessage('Unidad inválida (pieza o kg)')),
     o(body('iva').isIn(TIPOS_IVA).withMessage(`IVA inválido (${TIPOS_IVA.join(', ')})`)),
     body('presentacion').optional().isString().trim().isLength({ max: 80 }).withMessage('Presentación: máx. 80 caracteres'),
+    body('claveSat').optional().custom(v => v === '' || /^\d{8}$/.test(v)).withMessage('Clave SAT: 8 dígitos'),
+    body('claveUnidadSat').optional().custom(v => v === '' || /^[A-Za-z0-9]{2,3}$/.test(v)).withMessage('Clave de unidad SAT inválida'),
     booleano('requiereReceta').optional(),
     booleano('esControlado').optional(),
     booleano('requiereRefrigeracion').optional(),

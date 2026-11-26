@@ -3,6 +3,7 @@
 const mongoose = require('mongoose');
 const { CLAVES_LISTA } = require('./ListaPrecios');
 const { RE_RFC } = require('./Proveedor');
+const { REGIMENES, USOS_CFDI, RE_CP } = require('../config/sat');
 
 const TIPOS = ['publico', 'clinica', 'veterinaria', 'petshop', 'estetica', 'empleado'];
 const entero = (min, max) => ({ type: Number, min, max, validate: { validator: v => v === undefined || Number.isSafeInteger(v), message: 'Debe ser un entero' } });
@@ -21,6 +22,17 @@ const creditoSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// Datos para facturar (CFDI 4.0): deben coincidir con la constancia de situación fiscal del cliente
+const fiscalSchema = new mongoose.Schema(
+  {
+    razonSocial: { type: String, trim: true, uppercase: true, maxlength: 254 },
+    regimen: { type: String, enum: { values: Object.keys(REGIMENES), message: 'Régimen fiscal inválido' } },
+    codigoPostal: { type: String, trim: true, match: [RE_CP, 'Código postal: 5 dígitos'] },
+    usoCfdi: { type: String, enum: { values: Object.keys(USOS_CFDI), message: 'Uso de CFDI inválido' }, default: 'G03' }
+  },
+  { _id: false }
+);
+
 const clienteSchema = new mongoose.Schema(
   {
     nombre: { type: String, required: [true, 'El nombre es obligatorio'], trim: true, maxlength: 120 },
@@ -31,6 +43,7 @@ const clienteSchema = new mongoose.Schema(
     email: { type: String, trim: true, lowercase: true, maxlength: 120 },
     esPublicoGeneral: { type: Boolean, default: false },
     credito: { type: creditoSchema, default: () => ({}) },
+    fiscal: { type: fiscalSchema, default: () => ({}) },
     activo: { type: Boolean, default: true }
   },
   { timestamps: true }

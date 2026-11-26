@@ -112,7 +112,9 @@ router.get('/:id/ticket', puedeConsultar, validar([id, query('ancho').optional()
   const venta = await ventas.obtener(req.alcance, req.user, req.datos.id, { ...vision(req), verCostos: false });
   const sucursal = await Sucursal.findById(venta.sucursal).lean();
   res.set('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'");
-  res.type('html').send(htmlTicket(venta, { sucursal: sucursal?.nombre || '', ancho: req.datos.ancho || 80 }));
+  // Dirección pública de la autofactura (FRONTEND_URL o el primer origen permitido)
+  const frontend = process.env.FRONTEND_URL || (process.env.CORS_ORIGINS || '').split(',')[0].trim();
+  res.type('html').send(htmlTicket(venta, { sucursal: sucursal?.nombre || '', ancho: req.datos.ancho || 80, urlAutofactura: frontend ? `${frontend.replace(/\/$/, '')}/autofactura` : null }));
 });
 
 // POST /api/ventas/:id/forma-pago { pagos, motivo, autorizacion } — PIN del dueño; turno de la venta abierto

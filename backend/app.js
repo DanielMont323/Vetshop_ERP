@@ -36,7 +36,8 @@ const RUTAS_OPERATIVAS = [
   ['/api/cobranza', require('./routes/cobranza')],
   ['/api/conteos', require('./routes/conteos')],
   ['/api/cadena-frio', require('./routes/cadenaFrio')],
-  ['/api/metas', require('./routes/metas')]
+  ['/api/metas', require('./routes/metas')],
+  ['/api/facturas', require('./routes/facturas')]
 ];
 
 // opciones.rutasOperativas: rutas extra montadas igual que las operativas (las usan las pruebas)
@@ -70,6 +71,8 @@ function crearApp({ rutasOperativas = [] } = {}) {
 
   // Rutas globales (sin alcance de sucursal)
   app.use('/api/auth', require('./routes/auth'));
+  // Pública: autofactura de clientes (con límite de intentos por IP)
+  app.use('/api/autofactura', require('./routes/autofactura'));
   app.use('/api/usuarios', autenticar, require('./routes/usuarios'));
   app.use('/api/sucursales', autenticar, require('./routes/sucursales'));
   app.use('/api/productos', autenticar, require('./routes/productos'));

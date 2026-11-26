@@ -239,6 +239,26 @@ export const metasAPI = {
   vendedores: config => api.get('/metas/vendedores', config)
 };
 
+export const facturasAPI = {
+  listar: params => api.get('/facturas', { params }),
+  obtener: id => api.get(`/facturas/${id}`),
+  ventasFacturables: params => api.get('/facturas/ventas-facturables', { params }),
+  facturar: datos => api.post('/facturas', datos, { timeout: 60000 }),
+  global: datos => api.post('/facturas/global', datos, { timeout: 60000 }),
+  notaCredito: (id, datos) => api.post(`/facturas/${id}/nota-credito`, datos, { timeout: 60000 }),
+  complementoPago: (id, datos) => api.post(`/facturas/${id}/complemento-pago`, datos, { timeout: 60000 }),
+  cancelar: (id, datos) => api.post(`/facturas/${id}/cancelar`, datos, { timeout: 60000 }),
+  xml: id => api.get(`/facturas/${id}/xml`, { responseType: 'blob' }),
+  representacion: id => api.get(`/facturas/${id}/representacion`, { responseType: 'blob', timeout: 60000 })
+};
+
+// Pública (sin sesión)
+export const autofacturaAPI = {
+  sucursales: () => api.get('/autofactura/sucursales'),
+  facturar: datos => api.post('/autofactura', datos, { timeout: 60000 }),
+  documento: (id, tipo, uuid) => api.get(`/autofactura/${id}/${tipo}`, { params: { uuid }, responseType: 'blob', timeout: 60000 })
+};
+
 export const reportesAPI = {
   dashboard: () => api.get('/reportes/dashboard'),
   ventas: params => api.get('/reportes/ventas', { params }),

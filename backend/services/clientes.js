@@ -7,6 +7,7 @@ const auditoria = require('./auditoria');
 
 const CAMPOS = ['nombre', 'tipo', 'listaPrecios', 'rfc', 'telefono', 'email', 'activo'];
 const CAMPOS_CREDITO = ['activo', 'limite', 'dias', 'bonificacionProntoPago', 'diasProntoPago'];
+const CAMPOS_FISCAL = ['razonSocial', 'regimen', 'codigoPostal', 'usoCfdi'];
 const NOMBRE_PUBLICO_GENERAL = 'Público en general';
 
 const publico = c => ({
@@ -24,6 +25,12 @@ const publico = c => ({
     dias: c.credito?.dias ?? 30,
     bonificacionProntoPago: c.credito?.bonificacionProntoPago || 0,
     diasProntoPago: c.credito?.diasProntoPago ?? 8
+  },
+  fiscal: {
+    razonSocial: c.fiscal?.razonSocial || '',
+    regimen: c.fiscal?.regimen || '',
+    codigoPostal: c.fiscal?.codigoPostal || '',
+    usoCfdi: c.fiscal?.usoCfdi || 'G03'
   },
   activo: c.activo
 });
@@ -55,11 +62,12 @@ async function obtener(id) {
   return publico(c);
 }
 
+const soloFiscal = (fiscal = {}) => Object.fromEntries(CAMPOS_FISCAL.filter(k => fiscal[k] !== undefined).map(k => [k, fiscal[k] === '' ? undefined : fiscal[k]]));
 const soloCredito = (credito = {}) => Object.fromEntries(CAMPOS_CREDITO.filter(k => credito[k] !== undefined).map(k => [k, credito[k]]));
 
 async function crear(datos, actor) {
   return conTransaccion(async session => {
-    const [c] = await Cliente.create([{ ...datos, credito: soloCredito(datos.credito), esPublicoGeneral: false }], { session });
+    const [c] = await Cliente.create([{ ...datos, credito: soloCredito(datos.credito), fiscal: soloFiscal(datos.fiscal), esPublicoGeneral: false }], { session });
     await auditoria.registrar({ usuario: actor._id, accion: 'cliente.crear', entidad: 'Cliente', entidadId: c._id, despues: publico(c) }, session);
     return publico(c);
   });
@@ -75,6 +83,7 @@ async function actualizar(id, cambios, actor) {
     const antes = publico(c);
     for (const campo of CAMPOS) if (cambios[campo] !== undefined) c[campo] = cambios[campo];
     for (const [campo, valor] of Object.entries(soloCredito(cambios.credito))) c.set(`credito.${campo}`, valor);
+    for (const [campo, valor] of Object.entries(soloFiscal(cambios.fiscal))) c.set(`fiscal.${campo}`, valor);
     if (c.isModified()) {
       await c.save({ session });
       await auditoria.registrar({ usuario: actor._id, accion: 'cliente.actualizar', entidad: 'Cliente', entidadId: c._id, antes, despues: publico(c) }, session);
