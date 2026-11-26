@@ -22,6 +22,12 @@ const minimoSchema = new mongoose.Schema(
       required: true,
       min: [0, 'El mínimo no puede ser negativo'],
       validate: { validator: Number.isSafeInteger, message: 'El mínimo debe ser un entero (piezas o gramos)' }
+    },
+    // Máximo opcional (compras sugeridas piden hasta aquí); 0 o ausente = sin máximo
+    maximo: {
+      type: Number,
+      min: [0, 'El máximo no puede ser negativo'],
+      validate: { validator: v => v === undefined || v === null || Number.isSafeInteger(v), message: 'El máximo debe ser un entero (piezas o gramos)' }
     }
   },
   { _id: false }
@@ -68,6 +74,10 @@ productoSchema.pre('validate', function () {
   // Un medicamento controlado siempre exige receta
   if (this.esControlado) this.requiereReceta = true;
 });
+
+productoSchema.path('minimos').validate(function (lista) {
+  return (lista || []).every(m => !m.maximo || m.maximo >= m.cantidad);
+}, 'El máximo no puede ser menor que el mínimo');
 
 productoSchema.path('minimos').validate(function (lista) {
   const ids = (lista || []).map(m => String(m.sucursal));

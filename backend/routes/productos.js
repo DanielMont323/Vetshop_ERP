@@ -36,6 +36,8 @@ function reglasProducto(opcional) {
     body('minimos.*.sucursal').isMongoId().withMessage('Sucursal inválida en mínimos'),
     body('minimos.*.cantidad').custom(v => Number.isSafeInteger(v) && v >= 0)
       .withMessage('El mínimo debe ser un entero ≥ 0 (piezas o gramos)'),
+    body('minimos.*.maximo').optional({ values: 'null' }).custom(v => Number.isSafeInteger(v) && v >= 0)
+      .withMessage('El máximo debe ser un entero ≥ 0 (piezas o gramos)'),
     body('precios').optional().custom(validarMapaPrecios)
   ];
 }
