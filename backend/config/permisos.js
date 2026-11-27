@@ -48,6 +48,9 @@ const PERMISOS = [
   'clientes:gestionar',
   'cuentas_pagar:gestionar',
   'metas:gestionar',
+  'configuracion:gestionar',
+  // Clientes: alta rápida y datos de contacto desde la caja (el crédito y la lista de precios siguen siendo del dueño)
+  'clientes:registrar',
   // Facturación (CFDI)
   'facturacion:emitir',
   'facturacion:cancelar',
@@ -58,7 +61,7 @@ const PERMISOS = [
 const MATRIZ = {
   cajero: [
     'ventas:cobrar', 'ventas:ver_propias_del_dia', 'existencias:ver', 'corte:capturar_conteo', 'catalogo:ver', 'recetas:capturar',
-    'credito:vender', 'cobranza:registrar_abono', 'cadena_frio:capturar', 'facturacion:emitir'
+    'credito:vender', 'cobranza:registrar_abono', 'cadena_frio:capturar', 'facturacion:emitir', 'clientes:registrar'
   ],
   almacen: [
     'inventario:entradas',

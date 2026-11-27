@@ -41,6 +41,10 @@ const clienteSchema = new mongoose.Schema(
     rfc: { type: String, trim: true, uppercase: true, match: [RE_RFC, 'RFC inválido'] },
     telefono: { type: String, trim: true, maxlength: 20 },
     email: { type: String, trim: true, lowercase: true, maxlength: 120 },
+    // WhatsApp a 10 dígitos (recordatorios y avisos); dirección y notas para el directorio
+    whatsapp: { type: String, trim: true, match: [/^\d{10}$/, 'WhatsApp: 10 dígitos'] },
+    direccion: { type: String, trim: true, maxlength: 300 },
+    notas: { type: String, trim: true, maxlength: 500 },
     esPublicoGeneral: { type: Boolean, default: false },
     credito: { type: creditoSchema, default: () => ({}) },
     fiscal: { type: fiscalSchema, default: () => ({}) },
@@ -57,6 +61,7 @@ clienteSchema.index({ 'credito.activo': 1 });
 
 clienteSchema.pre('validate', function () {
   if (this.rfc === '') this.rfc = undefined;
+  if (this.whatsapp === '') this.whatsapp = undefined;
   if (this.esPublicoGeneral && this.credito?.activo) this.invalidate('credito.activo', '"Público en general" no puede tener crédito');
 });
 

@@ -6,9 +6,9 @@ test('los 4 roles del plan', () => {
   expect([...ROLES].sort()).toEqual(['almacen', 'cajero', 'dueno', 'medico_responsable']);
 });
 
-test('cajero: vender (también a crédito), recibir abonos, ver sus ventas del día, existencias, conteo de corte, catálogo, recetas, temperaturas, facturar', () => {
+test('cajero: vender (también a crédito), recibir abonos, ver sus ventas del día, existencias, conteo de corte, catálogo, recetas, temperaturas, facturar, registrar clientes', () => {
   expect([...MATRIZ.cajero].sort()).toEqual([
-    'cadena_frio:capturar', 'catalogo:ver', 'cobranza:registrar_abono', 'corte:capturar_conteo', 'credito:vender', 'existencias:ver',
+    'cadena_frio:capturar', 'catalogo:ver', 'clientes:registrar', 'cobranza:registrar_abono', 'corte:capturar_conteo', 'credito:vender', 'existencias:ver',
     'facturacion:emitir', 'recetas:capturar', 'ventas:cobrar', 'ventas:ver_propias_del_dia'
   ]);
 });

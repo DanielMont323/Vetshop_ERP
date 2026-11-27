@@ -5,7 +5,9 @@ const { noEncontrado, solicitudInvalida } = require('../helpers/errores');
 const { normalizar } = require('../helpers/texto');
 const auditoria = require('./auditoria');
 
-const CAMPOS = ['nombre', 'tipo', 'listaPrecios', 'rfc', 'telefono', 'email', 'activo'];
+const CAMPOS = ['nombre', 'tipo', 'listaPrecios', 'rfc', 'telefono', 'email', 'whatsapp', 'direccion', 'notas', 'activo'];
+// Lo que puede capturar la caja (clientes:registrar): solo contacto, nunca crédito ni lista de precios
+const CAMPOS_CONTACTO = ['telefono', 'whatsapp', 'email', 'direccion', 'notas'];
 const CAMPOS_CREDITO = ['activo', 'limite', 'dias', 'bonificacionProntoPago', 'diasProntoPago'];
 const CAMPOS_FISCAL = ['razonSocial', 'regimen', 'codigoPostal', 'usoCfdi'];
 const NOMBRE_PUBLICO_GENERAL = 'Público en general';
@@ -18,6 +20,9 @@ const publico = c => ({
   rfc: c.rfc || null,
   telefono: c.telefono || '',
   email: c.email || '',
+  whatsapp: c.whatsapp || '',
+  direccion: c.direccion || '',
+  notas: c.notas || '',
   esPublicoGeneral: Boolean(c.esPublicoGeneral),
   credito: {
     activo: Boolean(c.credito?.activo),
@@ -52,7 +57,7 @@ async function listar({ q, activo } = {}) {
   const filtro = activo === undefined ? {} : { activo };
   const lista = await Cliente.find(filtro).collation({ locale: 'es', strength: 1 }).sort({ esPublicoGeneral: -1, nombre: 1 }).lean();
   const texto = normalizar(q || '');
-  const filtrados = texto ? lista.filter(c => normalizar(`${c.nombre} ${c.rfc || ''} ${c.telefono || ''}`).includes(texto)) : lista;
+  const filtrados = texto ? lista.filter(c => normalizar(`${c.nombre} ${c.rfc || ''} ${c.telefono || ''} ${c.whatsapp || ''} ${c.direccion || ''}`).includes(texto)) : lista;
   return filtrados.slice(0, 100).map(publico);
 }
 
@@ -92,4 +97,25 @@ async function actualizar(id, cambios, actor) {
   });
 }
 
-module.exports = { listar, obtener, crear, actualizar, publicoGeneral, NOMBRE_PUBLICO_GENERAL };
+// Alta rápida desde la caja: cliente de público con lista de público; el dueño decide después crédito y lista
+async function registrarRapido(datos, actor) {
+  return crear({ nombre: datos.nombre, tipo: 'publico', listaPrecios: 'publico', ...Object.fromEntries(CAMPOS_CONTACTO.filter(k => datos[k] !== undefined).map(k => [k, datos[k]])) }, actor);
+}
+
+// Datos de contacto (la caja los mantiene al día)
+async function actualizarContacto(id, cambios, actor) {
+  return conTransaccion(async session => {
+    const c = await Cliente.findById(id).session(session);
+    if (!c) throw noEncontrado('Cliente no encontrado');
+    if (c.esPublicoGeneral) throw solicitudInvalida('«Público en general» no tiene datos de contacto');
+    const antes = publico(c);
+    for (const campo of CAMPOS_CONTACTO) if (cambios[campo] !== undefined) c[campo] = cambios[campo] === '' ? undefined : cambios[campo];
+    if (c.isModified()) {
+      await c.save({ session });
+      await auditoria.registrar({ usuario: actor._id, accion: 'cliente.contacto', entidad: 'Cliente', entidadId: c._id, antes, despues: publico(c) }, session);
+    }
+    return publico(c);
+  });
+}
+
+module.exports = { registrarRapido, actualizarContacto, listar, obtener, crear, actualizar, publicoGeneral, NOMBRE_PUBLICO_GENERAL };

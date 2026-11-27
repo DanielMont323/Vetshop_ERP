@@ -86,6 +86,7 @@ function crearApp({ rutasOperativas = [] } = {}) {
   app.use('/api/listas-precios', autenticar, require('./routes/listasPrecios'));
   app.use('/api/proveedores', autenticar, require('./routes/proveedores'));
   app.use('/api/clientes', autenticar, require('./routes/clientes'));
+  app.use('/api/configuracion', autenticar, require('./routes/configuracion'));
   app.use('/api/cuentas-por-pagar', autenticar, require('./routes/cuentasPorPagar'));
 
   // Rutas operativas: siempre autenticar → scopeSucursal → router

@@ -64,14 +64,19 @@ router.get('/:id', validar([id]), async (req, res) => {
   res.json({ ok: true, datos: await turnos.obtener(req.alcance, req.user, req.datos.id, { verTodos: verTodos(req) }) });
 });
 
-// POST /api/turnos/:id/retiros { monto, motivo, autorizacion } — PIN del dueño
+// POST /api/turnos/:id/retiros { tipo: 'retiro'|'gasto', monto, concepto?, motivo?, autorizacion? }
+//   retiro: PIN del dueño siempre. gasto: concepto de la configuración; PIN solo si pasa del tope del turno.
 router.post(
   '/:id/retiros',
   validar([
     id,
+    body('tipo').optional().isIn(['retiro', 'gasto']),
     body('monto').custom(centavos(1)).withMessage('Monto: centavos enteros > 0'),
-    body('motivo').isString().trim().isLength({ min: 3, max: 200 }).withMessage('Indica el motivo del retiro'),
-    ...reglasAutorizacion
+    body('concepto').optional().isString().trim().isLength({ max: 40 }),
+    body('motivo').optional().isString().trim().isLength({ max: 200 }),
+    body('autorizacion').optional().isObject(),
+    body('autorizacion.usuario').if(body('autorizacion').exists()).isString().trim().notEmpty().withMessage('Falta el usuario del dueño'),
+    body('autorizacion.pin').if(body('autorizacion').exists()).isString().notEmpty().withMessage('Falta el PIN')
   ]),
   async (req, res) => {
     res.status(201).json({ ok: true, datos: await turnos.retirar(req.alcance, req.user, req.datos.id, req.datos) });
