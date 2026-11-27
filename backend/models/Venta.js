@@ -40,7 +40,13 @@ const partidaSchema = new mongoose.Schema(
     tipoIva: { type: String, required: true },
     tasaIva: { type: Number, required: true, min: 0 }, // puntos base
     bruto: centavos(), // precio × cantidad
+    origenPrecio: { type: String, enum: ['lista', 'escala', 'promocion'], default: 'lista' },
+    precioLista: centavos(false), // precio de la lista antes de escala o promoción
+    ahorroPrecio: { ...centavos(false), default: 0 }, // (precioLista − precioUnitario) × cantidad
+    escalaDesde: Number,
+    promocion: { id: { type: mongoose.Schema.Types.ObjectId, ref: 'Promocion' }, nombre: String, lote: String },
     descuentoPorcentaje: { type: Number, min: 0, max: 10000 }, // puntos base, si se pidió en %
+    descuentoMotivo: { type: String, trim: true, maxlength: 40 },
     descuento: centavos(),
     importe: centavos(), // bruto − descuento (con IVA)
     iva: centavos(), // IVA contenido en el importe

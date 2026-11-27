@@ -16,6 +16,7 @@ const ventaEnEsperaSchema = new mongoose.Schema(
         cantidad: { type: Number, required: true, min: 1 },
         descuentoPorcentaje: { type: Number, min: 0, max: 10000 },
         descuentoMonto: { type: Number, min: 0 },
+        descuentoMotivo: { type: String, trim: true, maxlength: 40 },
         receta: { type: mongoose.Schema.Types.ObjectId, ref: 'Receta' }
       }
     ]
