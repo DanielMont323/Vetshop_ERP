@@ -44,7 +44,8 @@ const RUTAS_OPERATIVAS = [
   ['/api/conteos', require('./routes/conteos')],
   ['/api/cadena-frio', require('./routes/cadenaFrio')],
   ['/api/metas', require('./routes/metas')],
-  ['/api/facturas', require('./routes/facturas')]
+  ['/api/facturas', require('./routes/facturas')],
+  ['/api/recordatorios', require('./routes/recordatorios')]
 ];
 
 // opciones.rutasOperativas: rutas extra montadas igual que las operativas (las usan las pruebas)
@@ -88,6 +89,7 @@ function crearApp({ rutasOperativas = [] } = {}) {
   app.use('/api/clientes', autenticar, require('./routes/clientes'));
   app.use('/api/configuracion', autenticar, require('./routes/configuracion'));
   app.use('/api/promociones', autenticar, require('./routes/promociones'));
+  app.use('/api/mascotas', autenticar, require('./routes/mascotas'));
   app.use('/api/cuentas-por-pagar', autenticar, require('./routes/cuentasPorPagar'));
 
   // Rutas operativas: siempre autenticar → scopeSucursal → router
