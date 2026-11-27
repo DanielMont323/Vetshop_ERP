@@ -168,6 +168,32 @@ export default function Reportes() {
               </tbody>
             </table>
           </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-white rounded-xl shadow overflow-x-auto">
+              <h3 className="font-semibold px-4 pt-3">Descuentos por motivo</h3>
+              <table className="w-full text-sm mt-2">
+                <thead className="bg-slate-100 text-left"><tr><th className="px-3 py-2">Motivo</th><th className="px-3 py-2 text-right">Partidas</th><th className="px-3 py-2 text-right">Descuento</th></tr></thead>
+                <tbody>
+                  {(datos.descuentosPorMotivo || []).map(d => (
+                    <tr key={d.motivo} className="border-t border-slate-100"><td className="px-3 py-2">{d.motivo}</td><td className="px-3 py-2 text-right tabular-nums">{d.partidas}</td><td className="px-3 py-2 text-right tabular-nums">{formatearDinero(d.descuento)}</td></tr>
+                  ))}
+                  {!datos.descuentosPorMotivo?.length && <tr><td colSpan={3} className="px-3 py-4 text-center text-slate-500">Sin descuentos en el periodo.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+            <div className="bg-white rounded-xl shadow overflow-x-auto">
+              <h3 className="font-semibold px-4 pt-3">Mayoreo y promociones</h3>
+              <table className="w-full text-sm mt-2">
+                <thead className="bg-slate-100 text-left"><tr><th className="px-3 py-2">Concepto</th><th className="px-3 py-2 text-right">Vendido</th><th className="px-3 py-2 text-right">Ahorro del cliente</th></tr></thead>
+                <tbody>
+                  {(datos.preciosEspeciales || []).map(d => (
+                    <tr key={d.concepto} className="border-t border-slate-100"><td className="px-3 py-2">{d.concepto}</td><td className="px-3 py-2 text-right tabular-nums">{formatearDinero(d.total)}</td><td className="px-3 py-2 text-right tabular-nums">{formatearDinero(d.ahorro)}</td></tr>
+                  ))}
+                  {!datos.preciosEspeciales?.length && <tr><td colSpan={3} className="px-3 py-4 text-center text-slate-500">Sin precios especiales en el periodo.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </>
       )}
     </section>

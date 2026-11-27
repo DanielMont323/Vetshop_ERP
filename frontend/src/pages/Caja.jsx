@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Clock, PauseCircle, Printer, ReceiptText, UserPlus, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
-import { clientesAPI, mensajeDeError, metasAPI, productosAPI, turnosAPI, ventasAPI } from '../services/api';
+import { clientesAPI, configuracionAPI, mensajeDeError, metasAPI, productosAPI, turnosAPI, ventasAPI } from '../services/api';
 import { baseATexto, cantidadABase, formatearDinero } from '../utils/formato';
 import { descuentoDe, imprimirTicket, importeBruto, nuevaClaveOperacion, porcentajeAPuntosBase, precioPara } from '../utils/caja';
 import BuscadorProducto from '../components/BuscadorProducto';
@@ -36,6 +36,13 @@ export default function Caja() {
   const [imprimir, setImprimir] = useState(true);
   const [turno, setTurno] = useState(undefined); // undefined = cargando, null = sin turno
   const [eligiendoReceta, setEligiendoReceta] = useState(null); // clave de la línea que elige receta
+  const [motivos, setMotivos] = useState([]);
+  const [cotizacion, setCotizacion] = useState({}); // clave de línea → precio que cobrará el servidor
+  const [cotizando, setCotizando] = useState(false);
+
+  useEffect(() => {
+    configuracionAPI.obtener().then(r => setMotivos(r.data.datos.descuentos?.motivos || [])).catch(() => setMotivos([]));
+  }, []);
 
   useEffect(() => {
     clientesAPI.listar({ activo: true }).then(r => {
@@ -54,25 +61,62 @@ export default function Caja() {
   const cliente = clientes.find(c => c.id === clienteId);
   const lista = cliente?.listaPrecios || 'publico';
 
+  // El servidor decide el precio (lista, mayoreo por cantidad o promoción): se le pide una cotización al cambiar el carrito
+  const firmaCotizacion = `${lineas.map(l => `${l.clave}:${l.producto.id}:${l.cantidad}`).join('|')}#${clienteId}#${sucursalActiva}`;
+  useEffect(() => {
+    const validas = lineas
+      .map(l => ({ l, cantidad: cantidadABase(l.cantidad, l.producto.unidad) }))
+      .filter(x => x.cantidad && !Number.isNaN(x.cantidad));
+    if (!validas.length) {
+      setCotizacion({});
+      setCotizando(false);
+      return undefined;
+    }
+    let vigente = true;
+    setCotizando(true);
+    const t = setTimeout(() => {
+      const esPublico = !clienteId || clientes[0]?.id === clienteId;
+      ventasAPI.cotizar({ ...(!esPublico && { cliente: clienteId }), partidas: validas.map(x => ({ producto: x.l.producto.id, cantidad: x.cantidad })) })
+        .then(r => vigente && setCotizacion(Object.fromEntries(validas.map((x, i) => [x.l.clave, r.data.datos[i] && { ...r.data.datos[i], cantidad: x.cantidad }]))))
+        .catch(() => vigente && setCotizacion({}))
+        .finally(() => vigente && setCotizando(false));
+    }, 250);
+    return () => {
+      vigente = false;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firmaCotizacion]);
+
   const calculos = useMemo(() => lineas.map(l => {
-    const p = precioPara(l.producto, lista);
     const cantidad = cantidadABase(l.cantidad, l.producto.unidad);
+    const cot = cotizacion[l.clave];
+    const cotizada = Boolean(cot && cot.cantidad === cantidad && cot.producto === l.producto.id);
+    const p = cotizada ? { precio: cot.precioUnitario, lista: cot.listaAplicada } : precioPara(l.producto, lista);
     const pb = porcentajeAPuntosBase(l.descuento);
+    const motivo = motivos.find(m => m.nombre === l.motivo);
     let error = null;
     if (!p) error = 'Sin precio de venta';
     else if (!cantidad || Number.isNaN(cantidad)) error = l.producto.unidad === 'kg' ? 'Escribe los kg (hasta 3 decimales)' : 'Cantidad inválida';
     else if (Number.isNaN(pb)) error = 'Descuento inválido (0 a 100 %)';
+    else if (pb && motivo && pb > motivo.maximo) error = `«${motivo.nombre}» permite hasta ${motivo.maximo / 100} % de descuento`;
     else if (l.producto.requiereReceta && !l.receta) error = 'Requiere receta: elige una receta validada';
     else if (l.receta && cantidad > l.receta.pendiente) error = `La receta R-${l.receta.folio} solo permite surtir ${baseATexto(l.receta.pendiente, l.producto.unidad)}`;
     const bruto = p && cantidad && !Number.isNaN(cantidad) ? importeBruto(p.precio, cantidad, l.producto.unidad) : 0;
     const descuento = Number.isNaN(pb) ? 0 : descuentoDe(bruto, pb);
-    return { precio: p?.precio ?? null, lista: p?.lista, cantidad, puntosBase: pb, bruto, descuento, importe: bruto - descuento, error };
-  }), [lineas, lista]);
+    return {
+      precio: p?.precio ?? null, lista: p?.lista, cantidad, puntosBase: pb, bruto, descuento, importe: bruto - descuento, error,
+      origen: cotizada ? cot.origenPrecio : 'lista', precioLista: cotizada ? cot.precioLista : null,
+      escalaDesde: cotizada ? cot.escalaDesde : null, promocion: cotizada ? cot.promocion : null,
+      pidePin: descuento > 0 && (!motivo || motivo.requierePin)
+    };
+  }), [lineas, lista, cotizacion, motivos]);
 
   const lineaReceta = lineas.find(l => l.clave === eligiendoReceta);
   const total = calculos.reduce((s, c) => s + c.importe, 0);
   const descuentoTotal = calculos.reduce((s, c) => s + c.descuento, 0);
-  const listo = lineas.length > 0 && calculos.every(c => !c.error) && turnoAbierto;
+  const pidePinDescuento = calculos.some(c => c.pidePin);
+  const listo = lineas.length > 0 && calculos.every(c => !c.error) && turnoAbierto && !cotizando;
 
   const agregar = useCallback(producto => {
     if (!producto.activo) return toast.error(`${producto.nombre} está desactivado`);
@@ -85,7 +129,7 @@ export default function Caja() {
         const n = Number(actuales[i].cantidad) || 0;
         return actuales.map((l, j) => (j === i ? { ...l, cantidad: String(n + 1) } : l));
       }
-      return [...actuales, { clave: claveNueva, producto, cantidad: producto.unidad === 'kg' ? '' : '1', descuento: '', receta: null }];
+      return [...actuales, { clave: claveNueva, producto, cantidad: producto.unidad === 'kg' ? '' : '1', descuento: '', motivo: '', receta: null }];
     });
     if (producto.unidad === 'kg') enfocar(`cantidad-${claveNueva}`);
     if (producto.requiereReceta) setEligiendoReceta(claveNueva);
@@ -105,6 +149,7 @@ export default function Caja() {
     producto: l.producto.id,
     cantidad: calculos[i].cantidad,
     ...(calculos[i].puntosBase && { descuentoPorcentaje: calculos[i].puntosBase }),
+    ...(calculos[i].puntosBase && l.motivo && { descuentoMotivo: l.motivo }),
     ...(l.receta && { receta: l.receta.id })
   }));
 
@@ -153,7 +198,7 @@ export default function Caja() {
       const productos = await Promise.all(espera.partidas.map(p => productosAPI.obtener(p.producto).then(r => r.data.datos)));
       setLineas(espera.partidas.map((p, i) => {
         siguienteClave += 1;
-        return { clave: siguienteClave, producto: productos[i], cantidad: baseATexto(p.cantidad, productos[i].unidad), descuento: p.descuentoPorcentaje ? String(p.descuentoPorcentaje / 100) : '', receta: null };
+        return { clave: siguienteClave, producto: productos[i], cantidad: baseATexto(p.cantidad, productos[i].unidad), descuento: p.descuentoPorcentaje ? String(p.descuentoPorcentaje / 100) : '', motivo: p.descuentoMotivo || '', receta: null };
       }));
       setClienteId(espera.cliente || clientes[0]?.id || '');
       setEsperaId(espera.id);
@@ -205,7 +250,7 @@ export default function Caja() {
           )}
         </div>
         <div className="flex-1 overflow-y-auto">
-          <Carrito lineas={lineas} calculos={calculos} alCambiar={cambiar} alQuitar={quitar} alElegirReceta={setEligiendoReceta} />
+          <Carrito motivos={motivos} lineas={lineas} calculos={calculos} alCambiar={cambiar} alQuitar={quitar} alElegirReceta={setEligiendoReceta} />
         </div>
       </div>
 
@@ -248,7 +293,7 @@ export default function Caja() {
       </aside>
 
       {panel === 'cobro' && (
-        <PanelCobro total={total} cliente={cliente} pideAutorizacion={descuentoTotal > 0} creditoPendiente={creditoPendiente} cobrando={cobrando} alCobrar={cobrar} alCerrar={() => { setPanel(null); setCreditoPendiente(null); enfocar('buscador-caja'); }} />
+        <PanelCobro total={total} cliente={cliente} pideAutorizacion={pidePinDescuento} creditoPendiente={creditoPendiente} cobrando={cobrando} alCobrar={cobrar} alCerrar={() => { setPanel(null); setCreditoPendiente(null); enfocar('buscador-caja'); }} />
       )}
       {panel === 'espera' && <VentasEspera alRecuperar={recuperar} alCerrar={() => setPanel(null)} />}
       {panel === 'gasto' && turnoAbierto && <GastoCaja turnoId={turno.id} alCerrar={() => { setPanel(null); enfocar('buscador-caja'); }} />}

@@ -1,10 +1,12 @@
 import { FileText, Trash2 } from 'lucide-react';
-import { formatearDinero } from '../../utils/formato';
+import { baseATexto, formatearDinero } from '../../utils/formato';
+
+const BOTONES_DESCUENTO = ['5', '10', '15'];
 
 const celda = 'w-full rounded border border-slate-300 px-2 py-1 text-right tabular-nums';
 
 // Líneas del carrito con vista previa de importe. `calculos[i]` = { precio, lista, bruto, descuento, importe, error }
-export default function Carrito({ lineas, calculos, alCambiar, alQuitar, alElegirReceta }) {
+export default function Carrito({ lineas, calculos, motivos = [], alCambiar, alQuitar, alElegirReceta }) {
   if (lineas.length === 0) {
     return (
       <div className="h-full grid place-items-center text-slate-400 text-center p-8">
@@ -19,7 +21,7 @@ export default function Carrito({ lineas, calculos, alCambiar, alQuitar, alElegi
           <th className="px-2 py-2">Producto</th>
           <th className="px-2 py-2 w-24 text-right">Cantidad</th>
           <th className="px-2 py-2 w-28 text-right">Precio</th>
-          <th className="px-2 py-2 w-20 text-right">Desc. %</th>
+          <th className="px-2 py-2 w-48 text-right">Descuento %</th>
           <th className="px-2 py-2 w-28 text-right">Importe</th>
           <th className="px-2 py-2 w-8" />
         </tr>
@@ -36,6 +38,12 @@ export default function Carrito({ lineas, calculos, alCambiar, alQuitar, alElegi
                 </span>
                 <span className="text-xs font-mono text-slate-500">{l.producto.sku}</span>
                 {c.lista && c.lista !== 'publico' && <span className="text-xs text-emerald-700"> · precio {c.lista}</span>}
+                {c.origen === 'escala' && (
+                  <span className="block text-xs text-emerald-700">Mayoreo desde {baseATexto(c.escalaDesde, l.producto.unidad)} {l.producto.unidad === 'kg' ? 'kg' : 'pzas'} · antes {formatearDinero(c.precioLista)}</span>
+                )}
+                {c.origen === 'promocion' && (
+                  <span className="block text-xs text-fuchsia-700">Promo: {c.promocion.nombre}{c.promocion.lote ? ` (lote ${c.promocion.lote})` : ''} · antes {formatearDinero(c.precioLista)}</span>
+                )}
                 {l.producto.requiereReceta && (
                   <button type="button" onClick={() => alElegirReceta(l.clave)} className="block text-xs text-emerald-700 underline">
                     {l.receta ? `Receta R-${l.receta.folio} (cambiar)` : 'Elegir receta'}
@@ -60,13 +68,37 @@ export default function Carrito({ lineas, calculos, alCambiar, alQuitar, alElegi
                 {l.producto.unidad === 'kg' && <span className="text-xs text-slate-500">/kg</span>}
               </td>
               <td className="px-2 py-1.5">
-                <input
-                  className={celda}
-                  inputMode="decimal"
-                  aria-label={`Descuento de ${l.producto.nombre}`}
-                  value={l.descuento}
-                  onChange={e => alCambiar(i, 'descuento', e.target.value)}
-                />
+                <div className="flex items-center justify-end gap-1">
+                  {BOTONES_DESCUENTO.map(n => (
+                    <button
+                      key={n}
+                      type="button"
+                      aria-pressed={l.descuento === n}
+                      onClick={() => alCambiar(i, 'descuento', l.descuento === n ? '' : n)}
+                      className={`rounded border px-1.5 py-1 text-xs ${l.descuento === n ? 'bg-amber-500 border-amber-500 text-white' : 'border-slate-300 hover:bg-slate-50'}`}
+                    >
+                      {n}%
+                    </button>
+                  ))}
+                  <input
+                    className="w-14 rounded border border-slate-300 px-2 py-1 text-right tabular-nums"
+                    inputMode="decimal"
+                    aria-label={`Descuento de ${l.producto.nombre}`}
+                    value={l.descuento}
+                    onChange={e => alCambiar(i, 'descuento', e.target.value)}
+                  />
+                </div>
+                {l.descuento && motivos.length > 0 && (
+                  <select
+                    className="mt-1 w-full rounded border border-slate-300 px-1 py-1 text-xs"
+                    aria-label={`Motivo del descuento de ${l.producto.nombre}`}
+                    value={l.motivo}
+                    onChange={e => alCambiar(i, 'motivo', e.target.value)}
+                  >
+                    <option value="">Motivo… (sin motivo pide PIN)</option>
+                    {motivos.map(m => <option key={m.nombre} value={m.nombre}>{m.nombre} · hasta {m.maximo / 100}%{m.requierePin ? ' · PIN' : ''}</option>)}
+                  </select>
+                )}
               </td>
               <td className="px-2 py-1.5 text-right tabular-nums">
                 {c.descuento > 0 && <span className="block text-xs text-slate-500 line-through">{formatearDinero(c.bruto)}</span>}
