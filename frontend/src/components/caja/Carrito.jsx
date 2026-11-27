@@ -41,6 +41,9 @@ export default function Carrito({ lineas, calculos, motivos = [], alCambiar, alQ
                 {c.origen === 'escala' && (
                   <span className="block text-xs text-emerald-700">Mayoreo desde {baseATexto(c.escalaDesde, l.producto.unidad)} {l.producto.unidad === 'kg' ? 'kg' : 'pzas'} · antes {formatearDinero(c.precioLista)}</span>
                 )}
+                {c.premioCostal > 0 && (
+                  <span className="block text-xs text-amber-700">Premio lealtad: costal {c.premiosCostal.map(n => `${n}.º`).join(', ')} · −{formatearDinero(c.premioCostal)}</span>
+                )}
                 {c.origen === 'promocion' && (
                   <span className="block text-xs text-fuchsia-700">Promo: {c.promocion.nombre}{c.promocion.lote ? ` (lote ${c.promocion.lote})` : ''} · antes {formatearDinero(c.precioLista)}</span>
                 )}

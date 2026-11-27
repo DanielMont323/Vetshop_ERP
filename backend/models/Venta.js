@@ -8,7 +8,8 @@ const mongoose = require('mongoose');
 const { alcanceSucursal } = require('./plugins/alcanceSucursal');
 
 // 'credito': la parte que queda a cuenta del cliente (genera un CargoCliente). No es dinero en la caja.
-const METODOS_PAGO = ['efectivo', 'tarjeta', 'transferencia', 'credito'];
+// 'puntos': lo pagado con puntos de lealtad (tampoco es dinero en la caja).
+const METODOS_PAGO = ['efectivo', 'tarjeta', 'transferencia', 'credito', 'puntos'];
 const centavos = (requerido = true) => ({
   type: Number,
   required: requerido,
@@ -47,6 +48,9 @@ const partidaSchema = new mongoose.Schema(
     promocion: { id: { type: mongoose.Schema.Types.ObjectId, ref: 'Promocion' }, nombre: String, lote: String },
     descuentoPorcentaje: { type: Number, min: 0, max: 10000 }, // puntos base, si se pidió en %
     descuentoMotivo: { type: String, trim: true, maxlength: 40 },
+    costalesLealtad: Number, // costales premium que sumó al programa
+    descuentoLealtad: centavos(false), // parte del descuento que es premio por costal (5.º, 10.º, 15.º)
+    premiosCostal: [Number],
     descuento: centavos(),
     importe: centavos(), // bruto − descuento (con IVA)
     iva: centavos(), // IVA contenido en el importe
@@ -87,6 +91,7 @@ const ventaSchema = new mongoose.Schema({
   total: centavos(), // lo que se cobra (con IVA)
   iva: centavos(),
   costo: centavos(),
+  lealtad: { puntosGanados: Number, puntosUsados: Number, costales: Number, costalesDespues: Number, saldoPuntos: Number },
   pagos: { type: [pagoSchema], validate: { validator: l => l.length > 0, message: 'La venta no tiene pagos' } },
   cambio: centavos(), // se entrega en efectivo
   autorizacionDescuento: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },

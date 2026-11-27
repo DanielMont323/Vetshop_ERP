@@ -7,7 +7,7 @@ const { formatearLocal } = require('./fechas');
 const escapar = texto =>
   String(texto ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-const METODOS = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', credito: 'A crédito' };
+const METODOS = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', credito: 'A crédito', puntos: 'Puntos' };
 const NEGOCIO = 'Huellitas Vetshop';
 
 function cantidadTexto(p) {
@@ -63,6 +63,7 @@ function htmlTicket(venta, { sucursal, ancho = 80, urlAutofactura } = {}) {
   <hr>
   ${pagos}
   ${venta.cambio > 0 ? `<div class="f t"><span>Cambio</span><span>${formatear(venta.cambio)}</span></div>` : ''}
+  ${venta.lealtad ? `<div class="f"><span>Puntos ganados</span><span>${venta.lealtad.puntosGanados || 0}</span></div><div class="f"><span>Saldo de puntos</span><span>${venta.lealtad.saldoPuntos}</span></div>` : ''}
   <hr>
   ${venta.aCredito > 0 ? `<div class="centro">Firma de conformidad (crédito):</div><br><div class="centro">______________________</div><hr>` : ''}
   ${urlAutofactura && venta.estado === 'cobrada' && !venta.aCredito ? `<div class="centro">Factura este ticket en el mes:</div><div class="centro">${escapar(urlAutofactura)}</div><div class="centro">con el folio y el total</div><hr>` : ''}

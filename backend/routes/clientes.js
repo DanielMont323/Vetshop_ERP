@@ -1,6 +1,7 @@
 // Clientes (catálogo global). Consultar: catalogo:ver (la caja necesita elegirlos).
 // Crear/modificar, incluida la lista de precios: clientes:gestionar (dueño).
 const express = require('express');
+const lealtad = require('../services/lealtad');
 const { body, param, query } = require('express-validator');
 const { validar } = require('../middleware/validar');
 const { requirePermiso } = require('../middleware/permisos');
@@ -78,6 +79,12 @@ router.patch(
     res.json({ ok: true, datos: await clientes.actualizarContacto(clienteId, cambios, req.user) });
   }
 );
+
+// GET /api/clientes/:id/lealtad — saldo y últimos movimientos del programa de lealtad
+router.get('/:id/lealtad', requirePermiso('catalogo:ver'), validar([id]), async (req, res) => {
+  const cliente = await clientes.obtener(req.datos.id);
+  res.json({ ok: true, datos: { ...cliente.lealtad, movimientos: await lealtad.movimientos(cliente.id) } });
+});
 
 router.get('/:id', requirePermiso('catalogo:ver'), validar([id]), async (req, res) => {
   res.json({ ok: true, datos: await clientes.obtener(req.datos.id) });

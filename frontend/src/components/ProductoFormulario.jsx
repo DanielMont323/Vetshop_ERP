@@ -24,6 +24,7 @@ function estadoInicial(p) {
     requiereReceta: p?.requiereReceta || false,
     esControlado: p?.esControlado || false,
     requiereRefrigeracion: p?.requiereRefrigeracion || false,
+    alimentoPremium: p?.alimentoPremium || false,
     activo: p?.activo ?? true,
     precios: Object.fromEntries(LISTAS_PRECIO.map(l => [l.clave, centavosATexto(p?.precios?.[l.clave])])),
     minimos: Object.fromEntries((p?.minimos || []).map(m => [m.sucursal, baseATexto(m.cantidad, p.unidad)])),
@@ -153,8 +154,9 @@ export default function ProductoFormulario({ producto, alCerrar, alGuardar }) {
               ['requiereReceta', 'Requiere receta'],
               ['esControlado', 'Medicamento controlado'],
               ['requiereRefrigeracion', 'Requiere refrigeración'],
+              f.categoria === 'alimento' && f.unidad === 'pieza' && ['alimentoPremium', 'Costal premium (suma a lealtad)'],
               ['activo', 'Activo']
-            ].map(([clave, texto]) => (
+            ].filter(Boolean).map(([clave, texto]) => (
               <label key={clave} className="flex items-center gap-2">
                 <input
                   type="checkbox"

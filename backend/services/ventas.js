@@ -18,6 +18,7 @@ const { calcularPartida, totales, calcularPagos } = require('./calculoVenta');
 const { resolverPrecio } = require('./precios');
 const promociones = require('./promociones');
 const configuracion = require('./configuracion');
+const lealtad = require('./lealtad');
 const { mejorPrecio, existenciaDeLotes, ahorro } = require('./precioVenta');
 const { aplicarTasa } = require('../helpers/dinero');
 const { publicoGeneral } = require('./clientes');
@@ -76,7 +77,8 @@ async function armarPartidas(entradas, listaPrecios, session, { sucursal, fecha 
       origenPrecio: mejor.origen, precioLista: mejor.precioLista, ahorroPrecio: ahorro(producto, e.cantidad, mejor),
       ...(mejor.escalaDesde && { escalaDesde: mejor.escalaDesde }),
       ...(mejor.promocion && { promocion: mejor.promocion }),
-      ...(partida.descuento > 0 && e.descuentoMotivo && { descuentoMotivo: e.descuentoMotivo })
+      ...(partida.descuento > 0 && e.descuentoMotivo && { descuentoMotivo: e.descuentoMotivo }),
+      ...(producto.alimentoPremium && producto.unidad === 'pieza' && { alimentoPremium: true })
     });
     if (e.receta) partida.receta = aId(e.receta);
     partidas.push(partida);
@@ -95,14 +97,15 @@ async function armarPartidas(entradas, listaPrecios, session, { sucursal, fecha 
 function revisarDescuentos(partidas, motivos) {
   let requierePin = false;
   for (const p of partidas) {
-    if (!p.descuento) continue;
+    const manual = (p.descuento || 0) - (p.descuentoLealtad || 0);
+    if (!manual) continue;
     if (!p.descuentoMotivo) {
       requierePin = true;
       continue;
     }
     const motivo = motivos.find(m => m.nombre === p.descuentoMotivo);
     if (!motivo) throw solicitudInvalida(`Motivo de descuento desconocido: ${p.descuentoMotivo}`);
-    if (p.descuento > aplicarTasa(p.bruto, motivo.maximo)) {
+    if (manual > aplicarTasa(p.bruto, motivo.maximo)) {
       throw solicitudInvalida(`${p.nombre}: «${motivo.nombre}» permite hasta ${motivo.maximo / 100} % de descuento`);
     }
     if (motivo.requierePin) requierePin = true;
@@ -115,7 +118,10 @@ async function cotizar(alcance, { cliente, partidas }) {
   const sucursal = sucursalDeEscritura(alcance);
   const c = await cargarCliente(cliente);
   const resultado = await armarPartidas(partidas, c.listaPrecios, null, { sucursal, cotizacion: true });
+  const cfg = await configuracion.obtener();
+  if (lealtad.elegible(c, cfg.lealtad)) lealtad.aplicarCostales(resultado, c, cfg.lealtad);
   return resultado.map(p => p && {
+    descuentoLealtad: p.descuentoLealtad || 0, costalesLealtad: p.costalesLealtad || 0, premiosCostal: p.premiosCostal || [],
     producto: p.producto, cantidad: p.cantidad, precioUnitario: p.precioUnitario, precioLista: p.precioLista,
     listaAplicada: p.listaAplicada, origenPrecio: p.origenPrecio, escalaDesde: p.escalaDesde || null,
     promocion: p.promocion || null, bruto: p.bruto, ahorroPrecio: p.ahorroPrecio
@@ -145,6 +151,7 @@ const publica = v => ({
   cancelacion: v.estado === 'cancelada' ? v.cancelacion : null,
   cambiosFormaPago: v.cambiosFormaPago || [],
   aCredito: (v.pagos || []).filter(p => p.metodo === 'credito').reduce((s, p) => s + p.monto, 0),
+  lealtad: v.lealtad || null,
   factura: v.factura || null,
   fecha: v.fecha
 });
@@ -166,7 +173,10 @@ async function cobrar(alcance, actor, datos, { verCostos = false } = {}) {
   // Precálculo fuera de la transacción para validar y pedir el PIN solo si hace falta
   const clientePrevio = await cargarCliente(datos.cliente);
   const partidasPrevias = await armarPartidas(datos.partidas, clientePrevio.listaPrecios, null, { sucursal });
-  const { descuentos: { motivos } } = await configuracion.obtener();
+  const cfg = await configuracion.obtener();
+  const { motivos } = cfg.descuentos;
+  const montoPuntos = (datos.pagos || []).filter(p => p.metodo === 'puntos').reduce((s, p) => s + p.monto, 0);
+  lealtad.validarCanje(clientePrevio, cfg.lealtad, montoPuntos);
   let autorizador = null;
   if (revisarDescuentos(partidasPrevias, motivos)) {
     if (!datos.autorizacion?.usuario) throw new ErrorApp(403, 'Los descuentos requieren autorización del dueño (usuario y PIN)', 'AUTORIZACION_REQUERIDA');
@@ -196,6 +206,9 @@ async function cobrar(alcance, actor, datos, { verCostos = false } = {}) {
       const fecha = new Date();
       const partidas = await armarPartidas(datos.partidas, cliente.listaPrecios, session, { sucursal, fecha });
       revisarDescuentos(partidas, motivos);
+      const conLealtad = lealtad.elegible(cliente, cfg.lealtad);
+      if (montoPuntos > 0 && !conLealtad) throw solicitudInvalida('Este cliente no participa en el programa de lealtad');
+      const costalesLealtad = conLealtad ? lealtad.aplicarCostales(partidas, cliente, cfg.lealtad) : null;
       const sumas = totales(partidas);
       const { cambio } = calcularPagos(sumas.total, datos.pagos);
       const ventaId = new mongoose.Types.ObjectId();
@@ -236,6 +249,13 @@ async function cobrar(alcance, actor, datos, { verCostos = false } = {}) {
         await VentaEnEspera.deleteOne({ _id: aId(datos.esperaId), sucursal }, { session });
       }
 
+      const resultadoLealtad = conLealtad
+        ? await lealtad.registrarEnVenta(
+          { cliente, config: cfg.lealtad, venta: { id: ventaId, folio: `${SERIE_VENTA}-${folio}` }, sucursal, usuario: actor._id, fecha, total: sumas.total, montoPuntos, ...costalesLealtad },
+          session
+        )
+        : null;
+
       const [nueva] = await Venta.create(
         [{
           _id: ventaId, sucursal, serie: SERIE_VENTA, folio,
@@ -244,7 +264,7 @@ async function cobrar(alcance, actor, datos, { verCostos = false } = {}) {
           cliente: cliente._id, clienteNombre: cliente.nombre, listaPrecios: cliente.listaPrecios,
           partidas, ...sumas, costo: partidas.reduce((s, p) => s + p.costo, 0),
           pagos: datos.pagos, cambio, autorizacionDescuento: autorizador?.id, autorizacionCredito: autorizadorCredito?.id,
-          claveOperacion: datos.claveOperacion, fecha
+          claveOperacion: datos.claveOperacion, fecha, ...(resultadoLealtad && { lealtad: resultadoLealtad })
         }],
         { session }
       );
@@ -341,6 +361,10 @@ async function cancelar(alcance, actor, id, { motivo, autorizacion }) {
     await inventario.revertirSalidas({ sucursal, referenciaId: venta._id, usuario: actor._id, nota: `Cancelación venta ${venta.serie}-${venta.folio}: ${motivo}`, autorizadoPor: autorizador.id, fecha }, session);
     // Lo surtido de recetas vuelve a quedar pendiente
     await recetas.revertirEnVenta({ sucursal, ventaId: venta._id }, session);
+    if (venta.lealtad) {
+      const cfg = await configuracion.obtener();
+      await lealtad.revertirEnVenta({ venta: venta.toObject(), config: cfg.lealtad, usuario: actor._id, fecha }, session);
+    }
     await auditoria.registrar(
       {
         usuario: actor._id, autorizadoPor: autorizador.id, accion: 'venta.cancelar', entidad: 'Venta', entidadId: venta._id, sucursal, motivo,

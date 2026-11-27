@@ -8,7 +8,7 @@ import { baseATexto, formatearDinero, hoyLocal } from '../utils/formato';
 import GraficaBarras from '../components/reportes/GraficaBarras';
 
 const AGRUPAR = [['dia', 'Día'], ['semana', 'Semana'], ['mes', 'Mes'], ['anio', 'Año']];
-const METODOS = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', credito: 'A crédito' };
+const METODOS = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', credito: 'A crédito', puntos: 'Puntos' };
 const CANALES = { publico: 'Público', distribucion: 'Distribución' };
 
 const primeroDelMes = () => `${hoyLocal().slice(0, 8)}01`;

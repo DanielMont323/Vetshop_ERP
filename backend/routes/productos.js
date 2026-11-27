@@ -33,6 +33,7 @@ function reglasProducto(opcional) {
     booleano('requiereReceta').optional(),
     booleano('esControlado').optional(),
     booleano('requiereRefrigeracion').optional(),
+    booleano('alimentoPremium').optional(),
     booleano('activo').optional(),
     body('minimos').optional().isArray({ max: 50 }).withMessage('minimos debe ser una lista'),
     body('minimos.*.sucursal').isMongoId().withMessage('Sucursal inválida en mínimos'),

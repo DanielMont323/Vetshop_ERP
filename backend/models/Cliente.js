@@ -48,6 +48,11 @@ const clienteSchema = new mongoose.Schema(
     esPublicoGeneral: { type: Boolean, default: false },
     credito: { type: creditoSchema, default: () => ({}) },
     fiscal: { type: fiscalSchema, default: () => ({}) },
+    // Programa de lealtad: saldo de puntos y posición en el ciclo de costales premium (lo mueven las ventas)
+    lealtad: {
+      puntos: { type: Number, default: 0 },
+      costales: { type: Number, default: 0, min: 0 }
+    },
     activo: { type: Boolean, default: true }
   },
   { timestamps: true }
