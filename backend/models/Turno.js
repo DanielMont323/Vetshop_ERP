@@ -43,14 +43,18 @@ const turnoSchema = new mongoose.Schema(
     // Se actualiza en cada venta y cancelación: así una venta y el conteo del corte nunca se cruzan
     // (las dos transacciones escriben este documento y Mongo serializa)
     ultimoMovimiento: Date,
-    // Retiros de efectivo durante el turno (con PIN del dueño)
+    // Salidas de efectivo durante el turno:
+    //   retiro: con PIN del dueño (p. ej. llevar efectivo al banco)
+    //   gasto:  gasto de caja con concepto (mandadito…); sin PIN hasta el tope por turno de la configuración
     retiros: [
       {
         _id: false,
+        tipo: { type: String, enum: ['retiro', 'gasto'], default: 'retiro' },
+        concepto: { type: String, maxlength: 40 },
         monto: { ...centavos, required: true },
         motivo: { type: String, required: true, maxlength: 200 },
         usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
-        autorizadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', required: true },
+        autorizadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' }, // vacío: gasto dentro del tope sin PIN
         fecha: { type: Date, required: true }
       }
     ],

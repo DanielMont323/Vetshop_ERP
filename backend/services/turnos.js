@@ -20,6 +20,7 @@ const { rangoDias, diaLocal } = require('../helpers/fechas');
 const { sumar } = require('../helpers/dinero');
 const { verificarPin } = require('./autorizaciones');
 const auditoria = require('./auditoria');
+const configuracion = require('./configuracion');
 const AbonoCliente = require('../models/AbonoCliente');
 
 const METODOS = ['efectivo', 'tarjeta', 'transferencia'];
@@ -127,22 +128,52 @@ async function cargarPropio(alcance, actor, id, session, { permitirDueno = true 
   return turno;
 }
 
-async function retirar(alcance, actor, id, { monto, motivo, autorizacion }) {
+/**
+ * Salida de efectivo del turno.
+ *   tipo 'retiro': siempre con PIN del dueño y motivo.
+ *   tipo 'gasto':  con un concepto de la configuración; sin PIN mientras lo gastado sin PIN en el turno no pase del
+ *                  tope (configuracion.caja.topeGastoSinPin). Arriba del tope pide PIN.
+ */
+async function retirar(alcance, actor, id, { monto, motivo, tipo = 'retiro', concepto, autorizacion }) {
   const sucursal = sucursalDeEscritura(alcance);
-  if (!Number.isSafeInteger(monto) || monto <= 0) throw solicitudInvalida('El retiro debe ser en centavos enteros > 0');
-  const autorizador = await verificarPin({ ...autorizacion, permiso: 'autorizar:retiro_efectivo', sucursal });
+  if (!Number.isSafeInteger(monto) || monto <= 0) throw solicitudInvalida('El monto debe ser en centavos enteros > 0');
+  const detalle = (motivo || '').trim();
+  let textoMotivo = detalle;
+  if (tipo === 'gasto') {
+    const { caja } = await configuracion.obtener();
+    if (!caja.conceptosGasto.includes(concepto)) throw solicitudInvalida('Elige un concepto de gasto de la lista');
+    textoMotivo = detalle ? `${concepto}: ${detalle}` : concepto;
+    if (!autorizacion?.usuario) {
+      const turnoActual = await cargarPropio(alcance, actor, id);
+      const usadoSinPin = sumar((turnoActual.retiros || []).filter(r => r.tipo === 'gasto' && !r.autorizadoPor).map(r => r.monto));
+      if (usadoSinPin + monto > caja.topeGastoSinPin) {
+        throw new ErrorApp(403, `Pasa del tope de gastos sin PIN (${(caja.topeGastoSinPin / 100).toFixed(2)} por turno): autoriza el dueño`, 'AUTORIZACION_REQUERIDA', {
+          tope: caja.topeGastoSinPin, usado: usadoSinPin, disponible: Math.max(0, caja.topeGastoSinPin - usadoSinPin)
+        });
+      }
+    }
+  } else if (textoMotivo.length < 3) {
+    throw solicitudInvalida('Indica el motivo del retiro');
+  }
+  const autorizador = tipo === 'retiro' || autorizacion?.usuario ? await verificarPin({ ...autorizacion, permiso: 'autorizar:retiro_efectivo', sucursal }) : null;
   return conTransaccion(async session => {
     const turno = await cargarPropio(alcance, actor, id, session);
     if (turno.estado !== 'abierto') throw conflicto('El turno ya no está abierto', 'TURNO_NO_ABIERTO');
+    // Se vuelve a revisar el tope dentro de la transacción (dos gastos al mismo tiempo no lo rebasan)
+    if (tipo === 'gasto' && !autorizador) {
+      const { caja } = await configuracion.obtener();
+      const usado = sumar((turno.retiros || []).filter(r => r.tipo === 'gasto' && !r.autorizadoPor).map(r => r.monto));
+      if (usado + monto > caja.topeGastoSinPin) throw new ErrorApp(403, 'Pasa del tope de gastos sin PIN: autoriza el dueño', 'AUTORIZACION_REQUERIDA', { tope: caja.topeGastoSinPin, usado, disponible: Math.max(0, caja.topeGastoSinPin - usado) });
+    }
     const { esperado } = await esperadoDe(turno, session);
     if (monto > esperado.efectivo) throw conflicto('No hay tanto efectivo en la caja', 'EFECTIVO_INSUFICIENTE');
-    const retiro = { monto, motivo, usuario: actor._id, autorizadoPor: autorizador.id, fecha: new Date() };
+    const retiro = { tipo, ...(tipo === 'gasto' && { concepto }), monto, motivo: textoMotivo, usuario: actor._id, ...(autorizador && { autorizadoPor: autorizador.id }), fecha: new Date() };
     await Turno.updateOne({ _id: turno._id, sucursal: turno.sucursal, estado: 'abierto' }, { $push: { retiros: retiro }, $set: { ultimoMovimiento: retiro.fecha } }, { session });
     await auditoria.registrar(
-      { usuario: actor._id, autorizadoPor: autorizador.id, accion: 'turno.retiro', entidad: 'Turno', entidadId: turno._id, sucursal, despues: { monto }, motivo },
+      { usuario: actor._id, autorizadoPor: autorizador?.id, accion: tipo === 'gasto' ? 'turno.gasto' : 'turno.retiro', entidad: 'Turno', entidadId: turno._id, sucursal, despues: { monto, tipo, concepto }, motivo: textoMotivo },
       session
     );
-    return { monto, motivo, autorizadoPor: autorizador.nombre };
+    return { tipo, concepto: concepto || null, monto, motivo: textoMotivo, autorizadoPor: autorizador?.nombre || null };
   });
 }
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, PauseCircle, Printer, ReceiptText } from 'lucide-react';
+import { Clock, PauseCircle, Printer, ReceiptText, UserPlus, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { clientesAPI, mensajeDeError, metasAPI, productosAPI, turnosAPI, ventasAPI } from '../services/api';
@@ -10,6 +10,8 @@ import BuscadorProducto from '../components/BuscadorProducto';
 import Carrito from '../components/caja/Carrito';
 import PanelCobro from '../components/caja/PanelCobro';
 import VentasEspera from '../components/caja/VentasEspera';
+import GastoCaja from '../components/caja/GastoCaja';
+import ClienteContacto from '../components/clientes/ClienteContacto';
 import SelectorReceta from '../components/caja/SelectorReceta';
 import { useDialogo } from '../contexts/DialogoContext';
 
@@ -19,7 +21,7 @@ const enfocar = id => setTimeout(() => document.getElementById(id)?.focus(), 0);
 // Pantalla de caja: lector de código de barras, F2 buscar, F12 cobrar.
 export default function Caja() {
   const { pedirTexto } = useDialogo();
-  const { sucursalActiva, usuario } = useAuth();
+  const { sucursalActiva, usuario, puede } = useAuth();
   const [clientes, setClientes] = useState([]);
   const [clienteId, setClienteId] = useState('');
   const [creditoPendiente, setCreditoPendiente] = useState(null);
@@ -189,6 +191,9 @@ export default function Caja() {
               {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}{c.listaPrecios !== 'publico' ? ` (${c.listaPrecios})` : ''}</option>)}
             </select>
           </label>
+          {puede('clientes:registrar') && (
+            <button type="button" onClick={() => setPanel('cliente')} title="Registrar cliente nuevo" aria-label="Registrar cliente nuevo" className="rounded-lg border border-slate-300 p-2 hover:bg-slate-50"><UserPlus size={18} /></button>
+          )}
           {vendedores.length > 1 && (
             <label className="flex items-center gap-2 text-sm">
               Vendedor
@@ -230,6 +235,7 @@ export default function Caja() {
           <button type="button" onClick={() => setPanel('espera')} className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 hover:bg-slate-50"><Clock size={16} /> Ventas en espera</button>
           <button type="button" onClick={limpiar} disabled={!lineas.length} className="rounded-lg border border-slate-300 px-3 py-2 hover:bg-slate-50 disabled:opacity-50">Vaciar carrito</button>
           <Link to="/ventas" className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 hover:bg-slate-50"><ReceiptText size={16} /> Ventas del día</Link>
+          <button type="button" onClick={() => setPanel('gasto')} disabled={!turnoAbierto} className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 hover:bg-slate-50 disabled:opacity-50"><Wallet size={16} /> Gasto de caja (mandadito…)</button>
         </div>
 
         {ultima && (
@@ -245,6 +251,17 @@ export default function Caja() {
         <PanelCobro total={total} cliente={cliente} pideAutorizacion={descuentoTotal > 0} creditoPendiente={creditoPendiente} cobrando={cobrando} alCobrar={cobrar} alCerrar={() => { setPanel(null); setCreditoPendiente(null); enfocar('buscador-caja'); }} />
       )}
       {panel === 'espera' && <VentasEspera alRecuperar={recuperar} alCerrar={() => setPanel(null)} />}
+      {panel === 'gasto' && turnoAbierto && <GastoCaja turnoId={turno.id} alCerrar={() => { setPanel(null); enfocar('buscador-caja'); }} />}
+      {panel === 'cliente' && (
+        <ClienteContacto
+          alCerrar={() => setPanel(null)}
+          alGuardar={nuevo => {
+            setClientes(cs => [...cs, nuevo]);
+            setClienteId(nuevo.id);
+            setPanel(null);
+          }}
+        />
+      )}
       {lineaReceta && (
         <SelectorReceta
           producto={lineaReceta.producto}

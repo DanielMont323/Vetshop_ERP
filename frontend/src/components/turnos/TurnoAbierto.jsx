@@ -4,6 +4,8 @@ import { mensajeDeError, turnosAPI } from '../../services/api';
 import { formatearDinero, formatearFecha, pesosACentavos } from '../../utils/formato';
 import ConteoDenominaciones, { aDenominaciones, conteoVacio } from './ConteoDenominaciones';
 import { useDialogo } from '../../contexts/DialogoContext';
+import { Wallet } from 'lucide-react';
+import GastoCaja from '../caja/GastoCaja';
 
 const campo = 'rounded border border-slate-300 px-2 py-1.5';
 
@@ -15,6 +17,7 @@ export default function TurnoAbierto({ turno, alCambiar, alContar }) {
   const [tarjeta, setTarjeta] = useState('');
   const [transferencia, setTransferencia] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [gasto, setGasto] = useState(false);
 
   const retirar = async e => {
     e.preventDefault();
@@ -22,7 +25,7 @@ export default function TurnoAbierto({ turno, alCambiar, alContar }) {
     if (!monto || Number.isNaN(monto)) return toast.error('Monto inválido');
     setEnviando(true);
     try {
-      await turnosAPI.retirar(turno.id, { monto, motivo: retiro.motivo.trim(), autorizacion: { usuario: retiro.usuario.trim(), pin: retiro.pin } });
+      await turnosAPI.retirar(turno.id, { tipo: 'retiro', monto, motivo: retiro.motivo.trim(), autorizacion: { usuario: retiro.usuario.trim(), pin: retiro.pin } });
       toast.success('Retiro registrado');
       setRetiro({ monto: '', motivo: '', usuario: '', pin: '' });
       alCambiar();
@@ -62,14 +65,17 @@ export default function TurnoAbierto({ turno, alCambiar, alContar }) {
         <div><p className="text-slate-500">Ventas</p><p className="font-semibold">{turno.ventas ?? '—'}</p></div>
         {turno.retiros.length > 0 && (
           <div className="sm:col-span-4">
-            <p className="text-slate-500">Retiros</p>
-            {turno.retiros.map((r, i) => <p key={i}>{formatearFecha(r.fecha, true)} · {formatearDinero(r.monto)} · {r.motivo}</p>)}
+            <p className="text-slate-500">Gastos y retiros</p>
+            {turno.retiros.map((r, i) => <p key={i}>{formatearFecha(r.fecha, true)} · {r.tipo === 'gasto' ? 'Gasto' : 'Retiro'} · {formatearDinero(r.monto)} · {r.motivo}</p>)}
           </div>
         )}
       </div>
 
       <form onSubmit={retirar} className="bg-white rounded-xl shadow p-4 space-y-2">
-        <h3 className="font-semibold">Retiro de efectivo</h3>
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="font-semibold mr-auto">Retiro de efectivo (con PIN del dueño)</h3>
+          <button type="button" onClick={() => setGasto(true)} className="flex items-center gap-1 rounded-lg bg-emerald-600 text-white px-3 py-1.5 text-sm hover:bg-emerald-700"><Wallet size={16} /> Gasto de caja</button>
+        </div>
         <fieldset disabled={enviando} className="grid sm:grid-cols-[8rem_1fr_10rem_6rem_auto] gap-2">
           <input className={campo} inputMode="decimal" placeholder="$ monto" aria-label="Monto del retiro" value={retiro.monto} onChange={e => setRetiro({ ...retiro, monto: e.target.value })} required />
           <input className={campo} placeholder="Motivo" aria-label="Motivo del retiro" value={retiro.motivo} onChange={e => setRetiro({ ...retiro, motivo: e.target.value })} required minLength={3} maxLength={200} />
@@ -91,6 +97,7 @@ export default function TurnoAbierto({ turno, alCambiar, alContar }) {
         </div>
         <button type="submit" disabled={enviando} className="w-full rounded-lg bg-emerald-600 text-white font-semibold py-2 hover:bg-emerald-700 disabled:opacity-60">Registrar conteo y hacer corte</button>
       </form>
+      {gasto && <GastoCaja turnoId={turno.id} alCerrar={() => setGasto(false)} alRegistrar={alCambiar} />}
     </div>
   );
 }

@@ -22,7 +22,9 @@ function htmlCorte(turno, { sucursal, ancho = 80 } = {}) {
     .filter(d => d.cantidad > 0)
     .map(d => `<div class="f"><span>${d.cantidad} × ${formatear(d.denominacion)}</span><span>${formatear(d.cantidad * d.denominacion)}</span></div>`)
     .join('');
-  const retiros = (turno.retiros || []).map(r => `<div class="f"><span>${escapar(r.motivo)}</span><span>${formatear(r.monto)}</span></div>`).join('');
+  const salida = r => `<div class="f"><span>${escapar(r.motivo)}</span><span>${formatear(r.monto)}</span></div>`;
+  const gastos = (turno.retiros || []).filter(r => r.tipo === 'gasto').map(salida).join('');
+  const retiros = (turno.retiros || []).filter(r => r.tipo !== 'gasto').map(salida).join('');
   const cierre = turno.cierre?.autorizadoPorNombre
     ? `<hr><div class="b">Cerrado con diferencia</div><div>Justificación: ${escapar(turno.cierre.justificacion)}</div><div>Autorizó: ${escapar(turno.cierre.autorizadoPorNombre)}</div>`
     : '';
@@ -47,6 +49,7 @@ function htmlCorte(turno, { sucursal, ancho = 80 } = {}) {
   <div class="f"><span>Fondo inicial</span><span>${formatear(turno.apertura.fondo)}</span></div>
   <div class="f"><span>Ventas</span><span>${c.ventas} (canceladas: ${c.canceladas})</span></div>
   ${c.abonos ? `<div class="f"><span>Abonos de clientes</span><span>${c.abonos}</span></div>` : ''}
+  ${gastos ? `<hr><div class="b">Gastos de caja</div>${gastos}` : ''}
   ${retiros ? `<hr><div class="b">Retiros</div>${retiros}` : ''}
   <hr>
   ${filas}
