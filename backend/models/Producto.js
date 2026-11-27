@@ -33,6 +33,15 @@ const minimoSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// Escala de mayoreo por cantidad: desde N (piezas o gramos) se cobra este precio final (centavos, con IVA)
+const escalaSchema = new mongoose.Schema(
+  {
+    desde: { type: Number, required: true, min: [2, 'La escala empieza desde 2'], validate: { validator: Number.isSafeInteger, message: 'Cantidad entera (piezas o gramos)' } },
+    precio: { type: Number, required: true, min: [0, 'Precio inválido'], validate: { validator: Number.isSafeInteger, message: 'El precio debe estar en centavos enteros' } }
+  },
+  { _id: false }
+);
+
 const productoSchema = new mongoose.Schema(
   {
     sku: {
@@ -61,7 +70,8 @@ const productoSchema = new mongoose.Schema(
     requiereRefrigeracion: { type: Boolean, default: false },
     iva: { type: String, enum: { values: TIPOS_IVA, message: 'Tipo de IVA inválido' }, required: true },
     activo: { type: Boolean, default: true },
-    minimos: { type: [minimoSchema], default: [] }
+    minimos: { type: [minimoSchema], default: [] },
+    escalas: { type: [escalaSchema], default: [] }
   },
   { timestamps: true }
 );
@@ -88,6 +98,15 @@ productoSchema.path('minimos').validate(function (lista) {
   const ids = (lista || []).map(m => String(m.sucursal));
   return new Set(ids).size === ids.length;
 }, 'Sucursal repetida en los mínimos');
+
+productoSchema.path('escalas').validate(function (lista) {
+  const desdes = (lista || []).map(e => e.desde);
+  return desdes.length <= 5 && new Set(desdes).size === desdes.length;
+}, 'Máximo 5 escalas de mayoreo, sin repetir la cantidad');
+
+productoSchema.pre('save', function () {
+  if (this.isModified('escalas')) this.escalas.sort((a, b) => a.desde - b.desde);
+});
 
 productoSchema.methods.tasaIva = function () {
   return PUNTOS_BASE_IVA[this.iva];

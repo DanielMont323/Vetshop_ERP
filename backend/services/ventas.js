@@ -16,6 +16,10 @@ const { solicitudInvalida, noEncontrado, conflicto, sinPermiso, ErrorApp } = req
 const { rangoDia, rangoDias, diaLocal } = require('../helpers/fechas');
 const { calcularPartida, totales, calcularPagos } = require('./calculoVenta');
 const { resolverPrecio } = require('./precios');
+const promociones = require('./promociones');
+const configuracion = require('./configuracion');
+const { mejorPrecio, existenciaDeLotes, ahorro } = require('./precioVenta');
+const { aplicarTasa } = require('../helpers/dinero');
 const { publicoGeneral } = require('./clientes');
 const inventario = require('./inventario');
 const recetas = require('./recetas');
@@ -39,29 +43,83 @@ async function cargarCliente(clienteId, session) {
   return cliente;
 }
 
-// Calcula las partidas con precios del servidor. No toca inventario.
-async function armarPartidas(entradas, listaPrecios, session) {
+// Calcula las partidas con precios del servidor (lista, escala de mayoreo o promoción: el más bajo).
+// No toca inventario. Con cotizacion: true no exige receta y deja null en las partidas sin precio.
+async function armarPartidas(entradas, listaPrecios, session, { sucursal, fecha = new Date(), cotizacion = false } = {}) {
   if (!Array.isArray(entradas) || entradas.length === 0) throw solicitudInvalida('La venta no tiene productos');
   if (entradas.length > MAX_PARTIDAS) throw solicitudInvalida(`Máximo ${MAX_PARTIDAS} partidas por venta`);
   const ids = [...new Set(entradas.map(e => String(e.producto)))].map(aId);
   const productos = new Map((await Producto.find({ _id: { $in: ids } }).session(session).lean()).map(p => [String(p._id), p]));
+  const promos = sucursal ? await promociones.vigentesPara([...productos.values()], sucursal, fecha, session) : new Map();
   const partidas = [];
   for (const e of entradas) {
     const producto = productos.get(String(e.producto));
     if (!producto) throw noEncontrado('Producto no encontrado');
     if (!producto.activo) throw solicitudInvalida(`${producto.nombre} está desactivado`);
-    const precio = await resolverPrecio(producto._id, listaPrecios, session);
-    if (!precio) throw conflicto(`${producto.nombre} no tiene precio de venta`, 'SIN_PRECIO');
-    const partida = calcularPartida({ producto, cantidad: e.cantidad, precio, descuentoPorcentaje: e.descuentoPorcentaje, descuentoMonto: e.descuentoMonto });
+    const base = await resolverPrecio(producto._id, listaPrecios, session);
+    if (!base) {
+      if (cotizacion) {
+        partidas.push(null);
+        continue;
+      }
+      throw conflicto(`${producto.nombre} no tiene precio de venta`, 'SIN_PRECIO');
+    }
+    const promosProducto = promos.get(String(producto._id)) || [];
+    const lotes = [...new Set(promosProducto.filter(p => p.alcance === 'lote').map(p => p.lote))];
+    const stockLote = lotes.length && Number.isSafeInteger(e.cantidad) ? await existenciaDeLotes(sucursal, producto._id, lotes, fecha, session) : new Map();
+    const mejor = mejorPrecio({ producto, cantidad: e.cantidad, base, promos: promosProducto, stockLote });
+    const partida = calcularPartida({
+      producto, cantidad: e.cantidad, precio: { precio: mejor.precio, lista: mejor.lista },
+      descuentoPorcentaje: e.descuentoPorcentaje, descuentoMonto: e.descuentoMonto
+    });
+    Object.assign(partida, {
+      origenPrecio: mejor.origen, precioLista: mejor.precioLista, ahorroPrecio: ahorro(producto, e.cantidad, mejor),
+      ...(mejor.escalaDesde && { escalaDesde: mejor.escalaDesde }),
+      ...(mejor.promocion && { promocion: mejor.promocion }),
+      ...(partida.descuento > 0 && e.descuentoMotivo && { descuentoMotivo: e.descuentoMotivo })
+    });
     if (e.receta) partida.receta = aId(e.receta);
     partidas.push(partida);
   }
+  if (cotizacion) return partidas;
   // Un producto con receta solo se cobra ligado a una receta validada (se verifica al surtirla)
   const sinReceta = partidas.filter(p => p.requiereReceta && !p.receta);
   if (sinReceta.length) {
     throw new ErrorApp(409, `Requiere receta validada: ${sinReceta.map(p => p.nombre).join(', ')}`, 'RECETA_REQUERIDA', { productos: sinReceta.map(p => p.producto) });
   }
   return partidas;
+}
+
+// Revisa los motivos de descuento. Devuelve true si hace falta el PIN del dueño:
+// un descuento sin motivo (como antes) o con un motivo que lo pide.
+function revisarDescuentos(partidas, motivos) {
+  let requierePin = false;
+  for (const p of partidas) {
+    if (!p.descuento) continue;
+    if (!p.descuentoMotivo) {
+      requierePin = true;
+      continue;
+    }
+    const motivo = motivos.find(m => m.nombre === p.descuentoMotivo);
+    if (!motivo) throw solicitudInvalida(`Motivo de descuento desconocido: ${p.descuentoMotivo}`);
+    if (p.descuento > aplicarTasa(p.bruto, motivo.maximo)) {
+      throw solicitudInvalida(`${p.nombre}: «${motivo.nombre}» permite hasta ${motivo.maximo / 100} % de descuento`);
+    }
+    if (motivo.requierePin) requierePin = true;
+  }
+  return requierePin;
+}
+
+// Vista previa de precios para la caja (no cobra ni toca inventario)
+async function cotizar(alcance, { cliente, partidas }) {
+  const sucursal = sucursalDeEscritura(alcance);
+  const c = await cargarCliente(cliente);
+  const resultado = await armarPartidas(partidas, c.listaPrecios, null, { sucursal, cotizacion: true });
+  return resultado.map(p => p && {
+    producto: p.producto, cantidad: p.cantidad, precioUnitario: p.precioUnitario, precioLista: p.precioLista,
+    listaAplicada: p.listaAplicada, origenPrecio: p.origenPrecio, escalaDesde: p.escalaDesde || null,
+    promocion: p.promocion || null, bruto: p.bruto, ahorroPrecio: p.ahorroPrecio
+  });
 }
 
 const publica = v => ({
@@ -107,9 +165,10 @@ async function cobrar(alcance, actor, datos, { verCostos = false } = {}) {
 
   // Precálculo fuera de la transacción para validar y pedir el PIN solo si hace falta
   const clientePrevio = await cargarCliente(datos.cliente);
-  const partidasPrevias = await armarPartidas(datos.partidas, clientePrevio.listaPrecios);
+  const partidasPrevias = await armarPartidas(datos.partidas, clientePrevio.listaPrecios, null, { sucursal });
+  const { descuentos: { motivos } } = await configuracion.obtener();
   let autorizador = null;
-  if (partidasPrevias.some(p => p.descuento > 0)) {
+  if (revisarDescuentos(partidasPrevias, motivos)) {
     if (!datos.autorizacion?.usuario) throw new ErrorApp(403, 'Los descuentos requieren autorización del dueño (usuario y PIN)', 'AUTORIZACION_REQUERIDA');
     autorizador = await verificarPin({ ...datos.autorizacion, permiso: 'autorizar:descuento', sucursal });
   }
@@ -134,11 +193,12 @@ async function cobrar(alcance, actor, datos, { verCostos = false } = {}) {
   try {
     const venta = await conTransaccion(async session => {
       const cliente = await cargarCliente(datos.cliente, session);
-      const partidas = await armarPartidas(datos.partidas, cliente.listaPrecios, session);
+      const fecha = new Date();
+      const partidas = await armarPartidas(datos.partidas, cliente.listaPrecios, session, { sucursal, fecha });
+      revisarDescuentos(partidas, motivos);
       const sumas = totales(partidas);
       const { cambio } = calcularPagos(sumas.total, datos.pagos);
       const ventaId = new mongoose.Types.ObjectId();
-      const fecha = new Date();
       // Toda venta pertenece al turno abierto de quien cobra (y la caja es la de ese turno)
       const turno = await turnos.turnoParaVender(sucursal, actor._id, fecha, session);
 
@@ -146,7 +206,7 @@ async function cobrar(alcance, actor, datos, { verCostos = false } = {}) {
         {
           sucursal, tipo: 'venta', usuario: actor._id, fecha,
           referencia: { modelo: 'Venta', id: ventaId },
-          partidas: partidas.map((p, i) => ({ producto: p.producto, cantidad: p.cantidad, partida: i }))
+          partidas: partidas.map((p, i) => ({ producto: p.producto, cantidad: p.cantidad, partida: i, ...(p.promocion?.lote && { lotePreferido: p.promocion.lote }) }))
         },
         session
       );
@@ -188,11 +248,11 @@ async function cobrar(alcance, actor, datos, { verCostos = false } = {}) {
         }],
         { session }
       );
-      if (autorizador) {
+      if (sumas.descuento > 0) {
         await auditoria.registrar(
           {
-            usuario: actor._id, autorizadoPor: autorizador.id, accion: 'venta.descuento', entidad: 'Venta', entidadId: ventaId, sucursal,
-            despues: { folio: nueva.folio, descuento: sumas.descuento, partidas: partidas.filter(p => p.descuento > 0).map(p => ({ sku: p.sku, descuento: p.descuento })) }
+            usuario: actor._id, ...(autorizador && { autorizadoPor: autorizador.id }), accion: 'venta.descuento', entidad: 'Venta', entidadId: ventaId, sucursal,
+            despues: { folio: nueva.folio, descuento: sumas.descuento, partidas: partidas.filter(p => p.descuento > 0).map(p => ({ sku: p.sku, descuento: p.descuento, motivo: p.descuentoMotivo || null })) }
           },
           session
         );
@@ -344,4 +404,4 @@ async function cambiarFormaPago(alcance, actor, id, { pagos, motivo, autorizacio
   });
 }
 
-module.exports = { cobrar, obtener, listar, cancelar, cambiarFormaPago, guardarEspera, listarEspera, eliminarEspera, SERIE_VENTA };
+module.exports = { cobrar, cotizar, obtener, listar, cancelar, cambiarFormaPago, guardarEspera, listarEspera, eliminarEspera, SERIE_VENTA };

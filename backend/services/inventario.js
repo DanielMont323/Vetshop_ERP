@@ -159,7 +159,8 @@ async function cantidadCaducada(sucursal, productoId, ahora, session) {
  *
  * @param {object} datos
  *   sucursal, tipo ('venta' | 'traspaso_salida' | 'ajuste'), usuario, fecha, referencia { modelo, id },
- *   partidas: [{ producto, cantidad, partida? }], motivo, nota, autorizadoPor
+ *   partidas: [{ producto, cantidad, partida?, lotePreferido? }], motivo, nota, autorizadoPor
+ *   (lotePreferido: ese lote sale primero aunque no sea el que caduca antes — promociones por lote)
  * @returns {Promise<Array>} por partida: { partida, producto, cantidad, capas[], costoTotal, movimiento }
  */
 async function consumirFefo(datos, session) {
@@ -173,17 +174,21 @@ async function consumirFefo(datos, session) {
   datos.partidas.forEach((p, i) => {
     exigirEnteroPositivo(p.cantidad, 'La cantidad');
     const clave = String(p.producto);
-    if (!porProducto.has(clave)) porProducto.set(clave, { total: 0, partidas: [] });
+    if (!porProducto.has(clave)) porProducto.set(clave, { total: 0, partidas: [], lotePreferido: null });
     const grupo = porProducto.get(clave);
     grupo.total += p.cantidad;
-    grupo.partidas.push({ indice: p.partida ?? i, cantidad: p.cantidad });
+    if (p.lotePreferido && !grupo.lotePreferido) grupo.lotePreferido = p.lotePreferido;
+    // La partida del lote en promoción toma primero de ese lote
+    if (p.lotePreferido) grupo.partidas.unshift({ indice: p.partida ?? i, cantidad: p.cantidad });
+    else grupo.partidas.push({ indice: p.partida ?? i, cantidad: p.cantidad });
   });
 
   // 2. Validar existencia vigente de TODOS antes de tocar nada
   const plan = [];
   for (const [productoId, grupo] of porProducto) {
     const producto = await cargarProducto(productoId, session);
-    const capas = await capasVigentes(sucursal, producto._id, fecha, session);
+    let capas = await capasVigentes(sucursal, producto._id, fecha, session);
+    if (grupo.lotePreferido) capas = [...capas.filter(c => c.lote === grupo.lotePreferido), ...capas.filter(c => c.lote !== grupo.lotePreferido)];
     const disponible = capas.reduce((s, c) => s + c.cantidadRestante, 0);
     if (disponible < grupo.total) {
       throw errorExistencia(producto, disponible, grupo.total, await cantidadCaducada(sucursal, producto._id, fecha, session));

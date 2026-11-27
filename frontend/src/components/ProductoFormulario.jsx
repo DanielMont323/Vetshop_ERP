@@ -27,7 +27,8 @@ function estadoInicial(p) {
     activo: p?.activo ?? true,
     precios: Object.fromEntries(LISTAS_PRECIO.map(l => [l.clave, centavosATexto(p?.precios?.[l.clave])])),
     minimos: Object.fromEntries((p?.minimos || []).map(m => [m.sucursal, baseATexto(m.cantidad, p.unidad)])),
-    maximos: Object.fromEntries((p?.minimos || []).filter(m => m.maximo).map(m => [m.sucursal, baseATexto(m.maximo, p.unidad)]))
+    maximos: Object.fromEntries((p?.minimos || []).filter(m => m.maximo).map(m => [m.sucursal, baseATexto(m.maximo, p.unidad)])),
+    escalas: (p?.escalas || []).map(e => ({ desde: baseATexto(e.desde, p.unidad), precio: centavosATexto(e.precio) }))
   };
 }
 
@@ -51,8 +52,18 @@ function aCuerpo(f, original) {
     if (maximo && maximo < (cantidad || 0)) return { error: 'El máximo no puede ser menor que el mínimo' };
     if (cantidad !== null || maximo) minimos.push({ sucursal, cantidad: cantidad || 0, ...(maximo && { maximo }) });
   }
-  const { precios: _p, minimos: _m, maximos: _x, ...resto } = f;
-  return { cuerpo: { ...resto, codigoBarras: f.codigoBarras.trim(), precios, minimos } };
+  const escalas = [];
+  for (const e of f.escalas) {
+    if (!String(e.desde).trim() && !String(e.precio).trim()) continue;
+    const desde = cantidadABase(e.desde, f.unidad);
+    const precio = pesosACentavos(e.precio);
+    if (!desde || Number.isNaN(desde) || desde < 2) return { error: `Mayoreo: «desde» inválido (${formato}, mínimo 2)` };
+    if (precio === null || Number.isNaN(precio)) return { error: 'Mayoreo: precio en pesos con máximo 2 decimales' };
+    if (escalas.some(x => x.desde === desde)) return { error: 'Mayoreo: cantidad repetida' };
+    escalas.push({ desde, precio });
+  }
+  const { precios: _p, minimos: _m, maximos: _x, escalas: _e, ...resto } = f;
+  return { cuerpo: { ...resto, codigoBarras: f.codigoBarras.trim(), precios, minimos, escalas } };
 }
 
 export default function ProductoFormulario({ producto, alCerrar, alGuardar }) {
@@ -173,6 +184,24 @@ export default function ProductoFormulario({ producto, alCerrar, alGuardar }) {
               ))}
             </div>
             <p className="text-xs text-slate-500 mt-1">Si una lista queda vacía, a esos clientes se les cobra el precio de público.</p>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold mb-2">Mayoreo por cantidad (opcional)</h3>
+            <div className="space-y-2">
+              {f.escalas.map((e, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm">
+                  Desde
+                  <input className="w-24 rounded-lg border border-slate-300 px-2 py-1.5 text-right" inputMode="decimal" aria-label="Desde cuántas" value={e.desde} onChange={ev => cambiar('escalas', f.escalas.map((x, j) => (j === i ? { ...x, desde: ev.target.value } : x)))} />
+                  {f.unidad === 'kg' ? 'kg' : 'piezas'} →
+                  <input className="w-28 rounded-lg border border-slate-300 px-2 py-1.5 text-right" inputMode="decimal" placeholder="$0.00" aria-label="Precio de mayoreo" value={e.precio} onChange={ev => cambiar('escalas', f.escalas.map((x, j) => (j === i ? { ...x, precio: ev.target.value } : x)))} />
+                  c/u
+                  <button type="button" onClick={() => cambiar('escalas', f.escalas.filter((_, j) => j !== i))} aria-label="Quitar escala" className="text-slate-400 hover:text-red-600"><X size={16} /></button>
+                </div>
+              ))}
+              {f.escalas.length < 5 && <button type="button" onClick={() => cambiar('escalas', [...f.escalas, { desde: '', precio: '' }])} className="text-sm text-emerald-700 underline">+ Agregar escala</button>}
+            </div>
+            <p className="text-xs text-slate-500 mt-1">Ej. desde 3 costales a $950 c/u. La caja lo aplica sola si es más barato que la lista del cliente.</p>
           </div>
 
           {usuario.sucursales.length > 0 && (

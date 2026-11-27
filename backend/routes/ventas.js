@@ -33,6 +33,7 @@ const reglasPartidas = [
   body('partidas.*.cantidad').custom(entero(1)).withMessage('Cantidad: entero > 0 (piezas o gramos)'),
   body('partidas.*.descuentoPorcentaje').optional().custom(entero(0, 10000)).withMessage('Descuento %: puntos base de 0 a 10000'),
   body('partidas.*.descuentoMonto').optional().custom(entero(0)).withMessage('Descuento: centavos enteros ≥ 0'),
+  body('partidas.*.descuentoMotivo').optional().isString().trim().isLength({ min: 1, max: 40 }).withMessage('Motivo de descuento: hasta 40 caracteres'),
   body('partidas.*.receta').optional().isMongoId().withMessage('Receta inválida')
 ];
 const reglasAutorizacion = [
@@ -40,6 +41,21 @@ const reglasAutorizacion = [
   body('autorizacion.usuario').if(body('autorizacion').exists()).isString().trim().notEmpty().withMessage('Falta el usuario que autoriza'),
   body('autorizacion.pin').if(body('autorizacion').exists()).isString().notEmpty().withMessage('Falta el PIN')
 ];
+
+// POST /api/ventas/cotizar — precios que aplicaría el servidor (lista, mayoreo por cantidad o promoción)
+router.post(
+  '/cotizar',
+  cobrar,
+  validar([
+    body('cliente').optional().isMongoId().withMessage('Cliente inválido'),
+    body('partidas').isArray({ min: 1, max: 100 }).withMessage('De 1 a 100 partidas'),
+    body('partidas.*.producto').isMongoId().withMessage('Producto inválido'),
+    body('partidas.*.cantidad').custom(entero(1)).withMessage('Cantidad: entero > 0 (piezas o gramos)')
+  ]),
+  async (req, res) => {
+    res.json({ ok: true, datos: await ventas.cotizar(req.alcance, req.datos) });
+  }
+);
 
 // POST /api/ventas — cobrar
 router.post(

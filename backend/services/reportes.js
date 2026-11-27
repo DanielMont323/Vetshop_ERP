@@ -135,13 +135,47 @@ async function productosMasVendidos(alcance, r, limite = 20) {
   return filas.map(({ _id, ...f }) => ({ producto: _id, ...conMargen({ ...f, descuento: 0 }) }));
 }
 
+// Descuentos de la caja por motivo (los que no traen motivo fueron con PIN, como antes del Paso 21)
+async function descuentosPorMotivo(alcance, r) {
+  const filas = await Venta.aggregate([
+    matchVentas(alcance, r),
+    { $unwind: '$partidas' },
+    { $match: { 'partidas.descuento': { $gt: 0 } } },
+    { $group: { _id: { $ifNull: ['$partidas.descuentoMotivo', 'Sin motivo (con PIN)'] }, descuento: { $sum: '$partidas.descuento' }, partidas: { $sum: 1 } } },
+    { $sort: { descuento: -1 } }
+  ]);
+  return filas.map(({ _id, ...f }) => ({ motivo: _id, ...f }));
+}
+
+// Lo que se dejó de cobrar frente a la lista por mayoreo por cantidad y por cada promoción
+async function preciosEspeciales(alcance, r) {
+  const filas = await Venta.aggregate([
+    matchVentas(alcance, r),
+    { $unwind: '$partidas' },
+    { $match: { 'partidas.origenPrecio': { $in: ['escala', 'promocion'] } } },
+    {
+      $group: {
+        _id: { $cond: [{ $eq: ['$partidas.origenPrecio', 'escala'] }, 'Mayoreo por cantidad', { $concat: ['Promoción: ', { $ifNull: ['$partidas.promocion.nombre', '—'] }] }] },
+        ahorro: { $sum: '$partidas.ahorroPrecio' },
+        total: { $sum: '$partidas.importe' },
+        partidas: { $sum: 1 }
+      }
+    },
+    { $sort: { ahorro: -1 } }
+  ]);
+  return filas.map(({ _id, ...f }) => ({ concepto: _id, ...f }));
+}
+
 async function resumen(alcance, { desde, hasta, agrupar = 'dia' } = {}) {
   const r = rango({ desde, hasta });
-  const [t, periodos, sucursales, cajeros, formas, canales, productos] = await Promise.all([
+  const [t, periodos, sucursales, cajeros, formas, canales, productos, descuentos, especiales] = await Promise.all([
     totales(alcance, r), porPeriodo(alcance, r, agrupar), porSucursal(alcance, r), porCajero(alcance, r),
-    porFormaPago(alcance, r), porCanal(alcance, r), productosMasVendidos(alcance, r)
+    porFormaPago(alcance, r), porCanal(alcance, r), productosMasVendidos(alcance, r), descuentosPorMotivo(alcance, r), preciosEspeciales(alcance, r)
   ]);
-  return { desde: desde || diaLocal(), hasta: hasta || desde || diaLocal(), agrupar, totales: t, periodos, sucursales, cajeros, formasPago: formas, canales, productos };
+  return {
+    desde: desde || diaLocal(), hasta: hasta || desde || diaLocal(), agrupar, totales: t, periodos, sucursales, cajeros, formasPago: formas, canales, productos,
+    descuentosPorMotivo: descuentos, preciosEspeciales: especiales
+  };
 }
 
 // Dashboard: hoy, últimos 7 días y alertas de la sucursal activa (o de todas, para el dueño sin X-Sucursal)

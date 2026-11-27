@@ -19,6 +19,11 @@ router.put(
     body('caja').optional().isObject(),
     body('caja.conceptosGasto').optional().isArray({ min: 1, max: 20 }).withMessage('De 1 a 20 conceptos de gasto'),
     body('caja.conceptosGasto.*').isString().trim().isLength({ min: 1, max: 40 }).withMessage('Concepto: de 1 a 40 caracteres'),
+    body('descuentos').optional().isObject(),
+    body('descuentos.motivos').optional().isArray({ min: 1, max: 20 }).withMessage('De 1 a 20 motivos de descuento'),
+    body('descuentos.motivos.*.nombre').isString().trim().isLength({ min: 1, max: 40 }).withMessage('Motivo: de 1 a 40 caracteres'),
+    body('descuentos.motivos.*.maximo').custom(v => Number.isSafeInteger(v) && v >= 1 && v <= 10000).withMessage('Máximo: puntos base de 1 a 10000'),
+    body('descuentos.motivos.*.requierePin').optional().isBoolean(),
     body('caja.topeGastoSinPin').optional().custom(v => Number.isSafeInteger(v) && v >= 0 && v <= 10000000).withMessage('Tope: centavos enteros ≥ 0')
   ]),
   async (req, res) => {

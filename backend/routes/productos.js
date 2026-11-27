@@ -40,6 +40,9 @@ function reglasProducto(opcional) {
       .withMessage('El mínimo debe ser un entero ≥ 0 (piezas o gramos)'),
     body('minimos.*.maximo').optional({ values: 'null' }).custom(v => Number.isSafeInteger(v) && v >= 0)
       .withMessage('El máximo debe ser un entero ≥ 0 (piezas o gramos)'),
+    body('escalas').optional().isArray({ max: 5 }).withMessage('Máximo 5 escalas de mayoreo'),
+    body('escalas.*.desde').custom(v => Number.isSafeInteger(v) && v >= 2).withMessage('Escala: «desde» entero ≥ 2 (piezas o gramos)'),
+    body('escalas.*.precio').custom(v => Number.isSafeInteger(v) && v >= 0).withMessage('Escala: precio en centavos enteros'),
     body('precios').optional().custom(validarMapaPrecios)
   ];
 }

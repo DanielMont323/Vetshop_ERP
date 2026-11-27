@@ -140,6 +140,12 @@ export const comprasAPI = {
   sugeridas: params => api.get('/compras/sugeridas', { params })
 };
 
+export const promocionesAPI = {
+  listar: params => api.get('/promociones', { params }),
+  crear: datos => api.post('/promociones', datos),
+  actualizar: (id, datos) => api.patch(`/promociones/${id}`, datos)
+};
+
 export const configuracionAPI = {
   obtener: () => api.get('/configuracion'),
   actualizar: datos => api.put('/configuracion', datos)
@@ -159,6 +165,7 @@ export const ventasAPI = {
   obtener: id => api.get(`/ventas/${id}`),
   cancelar: (id, datos) => api.post(`/ventas/${id}/cancelar`, datos),
   ticket: (id, ancho = 80) => api.get(`/ventas/${id}/ticket`, { params: { ancho }, responseType: 'text' }),
+  cotizar: datos => api.post('/ventas/cotizar', datos),
   listarEspera: () => api.get('/ventas/espera'),
   guardarEspera: datos => api.post('/ventas/espera', datos),
   eliminarEspera: id => api.delete(`/ventas/espera/${id}`)

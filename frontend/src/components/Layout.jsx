@@ -1,5 +1,5 @@
 import { Link, NavLink, Navigate, Outlet } from 'react-router-dom';
-import { ArrowLeftRight, BarChart3, BookUser, ClipboardList, HandCoins, Landmark, Receipt, Thermometer, Settings, Boxes, Calculator, FileText, KeyRound, LogOut, Package, PawPrint, ReceiptText, ShoppingCart, Store, Tags, Truck, Users } from 'lucide-react';
+import { ArrowLeftRight, BadgePercent, BarChart3, BookUser, ClipboardList, HandCoins, Landmark, Receipt, Thermometer, Settings, Boxes, Calculator, FileText, KeyRound, LogOut, Package, PawPrint, ReceiptText, ShoppingCart, Store, Tags, Truck, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const NOMBRES_ROL = {
@@ -44,6 +44,7 @@ export default function Layout() {
                 puede('cuentas_pagar:gestionar') && ['/cuentas-por-pagar', 'Por pagar', Landmark],
                 ['/productos', 'Productos', Package],
                 ['/listas-precios', 'Precios', Tags],
+                ['/promociones', 'Promociones', BadgePercent],
                 puede('usuarios:gestionar') && ['/administracion', 'Administración', Settings]
               ].filter(Boolean).map(([ruta, texto, Icono]) => (
                 <NavLink
