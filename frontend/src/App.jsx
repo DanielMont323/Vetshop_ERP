@@ -29,6 +29,7 @@ import Facturas from './pages/Facturas';
 import Autofactura from './pages/Autofactura';
 import Directorio from './pages/Directorio';
 import Promociones from './pages/Promociones';
+import Recordatorios from './pages/Recordatorios';
 import MiAvance from './components/metas/MiAvance';
 
 function Inicio() {
@@ -59,6 +60,7 @@ export default function App() {
             <Route path="/productos" element={<Productos />} />
             <Route path="/listas-precios" element={<ListasPrecios />} />
             <Route path="/promociones" element={<Promociones />} />
+            <Route path="/recordatorios" element={<Protegida permisos={['clientes:registrar']}><Recordatorios /></Protegida>} />
             <Route path="/existencias" element={<Protegida permisos={['existencias:ver']}><Existencias /></Protegida>} />
             <Route path="/compras" element={<Protegida permisos={['recepcion:registrar']}><Compras /></Protegida>} />
             <Route path="/proveedores" element={<Protegida permisos={['recepcion:registrar']}><Proveedores /></Protegida>} />
