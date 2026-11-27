@@ -12,7 +12,7 @@ const { tieneInventario } = require('./inventario');
 
 const CAMPOS_EDITABLES = [
   'sku', 'codigoBarras', 'nombre', 'categoria', 'unidad', 'presentacion',
-  'requiereReceta', 'esControlado', 'requiereRefrigeracion', 'iva', 'activo', 'minimos', 'claveSat', 'claveUnidadSat', 'escalas'
+  'requiereReceta', 'esControlado', 'requiereRefrigeracion', 'iva', 'activo', 'minimos', 'claveSat', 'claveUnidadSat', 'escalas', 'alimentoPremium'
 ];
 const LIMITE_MAXIMO = 100;
 
@@ -30,6 +30,7 @@ function publico(p, preciosProducto = {}) {
     requiereReceta: p.requiereReceta,
     esControlado: p.esControlado,
     requiereRefrigeracion: p.requiereRefrigeracion,
+    alimentoPremium: Boolean(p.alimentoPremium),
     iva: p.iva,
     activo: p.activo,
     minimos: (p.minimos || []).map(m => ({ sucursal: m.sucursal, cantidad: m.cantidad, maximo: m.maximo || null })),

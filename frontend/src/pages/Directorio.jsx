@@ -43,10 +43,10 @@ export default function Directorio() {
       <div className="bg-white rounded-xl shadow overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-slate-100 text-left"><tr>
-            <th className="px-3 py-2">Nombre</th><th className="px-3 py-2">Teléfono</th><th className="px-3 py-2">WhatsApp</th><th className="px-3 py-2">Dirección</th><th className="px-3 py-2">Notas</th>
+            <th className="px-3 py-2">Nombre</th><th className="px-3 py-2">Teléfono</th><th className="px-3 py-2">WhatsApp</th><th className="px-3 py-2">Dirección</th><th className="px-3 py-2">Notas</th><th className="px-3 py-2 text-right">Puntos</th>
           </tr></thead>
           <tbody>
-            {lista.length === 0 && <tr><td colSpan={5} className="px-3 py-4 text-slate-500">{q ? 'Ningún cliente coincide.' : 'Todavía no hay clientes registrados.'}</td></tr>}
+            {lista.length === 0 && <tr><td colSpan={6} className="px-3 py-4 text-slate-500">{q ? 'Ningún cliente coincide.' : 'Todavía no hay clientes registrados.'}</td></tr>}
             {lista.map(c => (
               <tr key={c.id} onClick={() => editable && setEditando(c)} className={`border-t border-slate-100 ${editable ? 'cursor-pointer hover:bg-emerald-50' : ''}`}>
                 <td className="px-3 py-2">{c.nombre}<span className="block text-xs text-slate-500">{TIPOS[c.tipo]}{c.credito?.activo ? ' · con crédito' : ''}</span></td>
@@ -58,6 +58,7 @@ export default function Directorio() {
                 </td>
                 <td className="px-3 py-2">{c.direccion || '—'}</td>
                 <td className="px-3 py-2 text-slate-600">{c.notas || ''}</td>
+                <td className="px-3 py-2 text-right tabular-nums">{c.tipo === 'publico' ? <>{c.lealtad?.puntos || 0}<span className="block text-xs text-slate-500">{c.lealtad?.costales || 0} costales</span></> : '—'}</td>
               </tr>
             ))}
           </tbody>

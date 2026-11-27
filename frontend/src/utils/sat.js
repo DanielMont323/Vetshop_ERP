@@ -28,7 +28,7 @@ export const USOS_CFDI = {
   S01: 'Sin efectos fiscales'
 };
 
-export const FORMAS_PAGO = { '01': 'Efectivo', '03': 'Transferencia', '04': 'Tarjeta de crédito', '28': 'Tarjeta de débito', '99': 'Por definir' };
+export const FORMAS_PAGO = { '01': 'Efectivo', '03': 'Transferencia', '04': 'Tarjeta de crédito', '05': 'Monedero electrónico', '28': 'Tarjeta de débito', '99': 'Por definir' };
 
 export const MOTIVOS_CANCELACION = {
   '01': '01 · Con errores, con relación (se sustituye)',

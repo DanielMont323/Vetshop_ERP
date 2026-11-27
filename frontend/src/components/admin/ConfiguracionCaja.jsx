@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { configuracionAPI, mensajeDeError } from '../../services/api';
-import { centavosATexto, pesosACentavos } from '../../utils/formato';
+import { centavosATexto, formatearDinero, pesosACentavos } from '../../utils/formato';
 import { porcentajeAPuntosBase } from '../../utils/caja';
 
 // Administración → Caja (dueño): conceptos de gasto de caja, tope de gastos sin PIN por turno y motivos de descuento.
@@ -12,12 +12,14 @@ export default function ConfiguracionCaja() {
   const [tope, setTope] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [motivos, setMotivos] = useState([]);
+  const [lealtad, setLealtad] = useState(null);
 
   useEffect(() => {
     configuracionAPI.obtener().then(r => {
       setConceptos(r.data.datos.caja.conceptosGasto);
       setTope(centavosATexto(r.data.datos.caja.topeGastoSinPin));
       setMotivos(r.data.datos.descuentos.motivos.map(m => ({ ...m, maximo: String(m.maximo / 100) })));
+      setLealtad({ ...r.data.datos.lealtad, valorPunto: centavosATexto(r.data.datos.lealtad.valorPunto) });
     }).catch(e => toast.error(mensajeDeError(e, 'No se pudo cargar la configuración')));
   }, []);
 
@@ -41,9 +43,11 @@ export default function ConfiguracionCaja() {
       listaMotivos.push({ nombre: m.nombre.trim(), maximo, requierePin: m.requierePin });
     }
     if (!listaMotivos.length) return toast.error('Deja al menos un motivo de descuento');
+    const valorPunto = pesosACentavos(lealtad?.valorPunto);
+    if (lealtad && (!valorPunto || Number.isNaN(valorPunto))) return toast.error('Valor del punto: en pesos, por ejemplo 0.10');
     setGuardando(true);
     try {
-      await configuracionAPI.actualizar({ caja: { conceptosGasto: conceptos, topeGastoSinPin: centavos }, descuentos: { motivos: listaMotivos } });
+      await configuracionAPI.actualizar({ caja: { conceptosGasto: conceptos, topeGastoSinPin: centavos }, descuentos: { motivos: listaMotivos }, ...(lealtad && { lealtad: { activa: lealtad.activa, valorPunto } }) });
       toast.success('Configuración guardada');
     } catch (err) {
       toast.error(mensajeDeError(err, 'No se pudo guardar'));
@@ -91,7 +95,21 @@ export default function ConfiguracionCaja() {
         </tbody>
       </table>
       {motivos.length < 20 && <button type="button" onClick={() => setMotivos([...motivos, { nombre: '', maximo: '10', requierePin: true }])} className="text-sm text-emerald-700 underline">+ Agregar motivo</button>}
-      <div />
+      {lealtad && (
+        <div className="border-t border-slate-100 pt-4 space-y-3">
+          <div>
+            <h3 className="font-semibold">Programa de lealtad</h3>
+            <p className="text-sm text-slate-600">
+              Solo clientes registrados de público. Costales premium: {lealtad.premiosCostal.map(p => `el ${p.numero}.º lleva ${p.porcentaje / 100} %`).join(', ')}; después vuelve a empezar.
+              Puntos por compra: {lealtad.escalones.map(e => (e.hasta === null ? `más → ${e.porcentaje / 100} %` : `hasta ${formatearDinero(e.hasta)} → ${e.porcentaje / 100} %`)).join(', ')} (en pesos de puntos).
+            </p>
+          </div>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={lealtad.activa} onChange={e => setLealtad({ ...lealtad, activa: e.target.checked })} /> Programa activo</label>
+          <label className="block text-sm"><span className="font-medium">Valor de cada punto</span>
+            <input className="mt-1 w-32 rounded-lg border border-slate-300 px-3 py-2 text-right tabular-nums" inputMode="decimal" value={lealtad.valorPunto} onChange={e => setLealtad({ ...lealtad, valorPunto: e.target.value })} />
+            <span className="block text-xs text-slate-500 mt-1">Con $0.10, una compra de $400 da 20 puntos = $2.00.</span></label>
+        </div>
+      )}
       <button type="submit" disabled={guardando} className="rounded-lg bg-emerald-600 text-white px-4 py-2 hover:bg-emerald-700 disabled:opacity-60">Guardar</button>
     </form>
   );

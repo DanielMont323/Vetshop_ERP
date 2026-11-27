@@ -7,7 +7,8 @@ const campo = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-right te
 // Captura de pagos (mixtos). El cambio solo sale del efectivo. F12 o Enter cobra; Esc cierra.
 // Si el cliente tiene crédito, aparece «A crédito» (lo que queda a su cuenta). Si el servidor responde que
 // rebasa el límite o tiene vencido (creditoPendiente), se pide el PIN del dueño y se vuelve a cobrar.
-export default function PanelCobro({ total, cliente, pideAutorizacion, creditoPendiente, cobrando, alCobrar, alCerrar }) {
+// Con `lealtad` ({ puntos, valorPunto }) aparece «Puntos»: lo que se paga con el saldo de puntos del cliente.
+export default function PanelCobro({ total, cliente, pideAutorizacion, creditoPendiente, cobrando, alCobrar, alCerrar, lealtad = null }) {
   const conCredito = Boolean(cliente?.credito?.activo);
   const [efectivo, setEfectivo] = useState(centavosATexto(total));
   const [tarjeta, setTarjeta] = useState('');
@@ -15,6 +16,8 @@ export default function PanelCobro({ total, cliente, pideAutorizacion, creditoPe
   const [transferencia, setTransferencia] = useState('');
   const [refTransferencia, setRefTransferencia] = useState('');
   const [credito, setCredito] = useState('');
+  const [puntos, setPuntos] = useState('');
+  const disponiblePuntos = lealtad ? lealtad.puntos * lealtad.valorPunto : 0;
   const [autorizador, setAutorizador] = useState('');
   const [pin, setPin] = useState('');
   const [autorizadorCredito, setAutorizadorCredito] = useState('');
@@ -29,17 +32,19 @@ export default function PanelCobro({ total, cliente, pideAutorizacion, creditoPe
     efectivo: pesosACentavos(efectivo) ?? 0,
     tarjeta: pesosACentavos(tarjeta) ?? 0,
     transferencia: pesosACentavos(transferencia) ?? 0,
-    credito: conCredito ? pesosACentavos(credito) ?? 0 : 0
+    credito: conCredito ? pesosACentavos(credito) ?? 0 : 0,
+    puntos: lealtad ? pesosACentavos(puntos) ?? 0 : 0
   };
   const invalido = Object.values(montos).some(Number.isNaN);
-  const otros = montos.tarjeta + montos.transferencia + montos.credito;
+  const otros = montos.tarjeta + montos.transferencia + montos.credito + montos.puntos;
   const pagado = montos.efectivo + otros;
   const falta = Math.max(0, total - pagado);
   const cambio = Math.max(0, pagado - total);
   let error = null;
   if (invalido) error = 'Usa pesos con máximo 2 decimales';
   else if (falta > 0) error = `Faltan ${formatearDinero(falta)}`;
-  else if (otros > total) error = 'Tarjeta, transferencia y crédito no pueden exceder el total';
+  else if (otros > total) error = 'Tarjeta, transferencia, crédito y puntos no pueden exceder el total';
+  else if (montos.puntos > disponiblePuntos) error = `El cliente solo tiene ${formatearDinero(disponiblePuntos)} en puntos`;
   else if (pideAutorizacion && (!autorizador.trim() || !pin)) error = 'El descuento necesita usuario y PIN del dueño';
   else if (creditoPendiente && montos.credito > 0 && (!autorizadorCredito.trim() || !pinCredito)) error = 'El crédito necesita usuario y PIN del dueño';
 
@@ -49,7 +54,8 @@ export default function PanelCobro({ total, cliente, pideAutorizacion, creditoPe
       montos.efectivo > 0 && { metodo: 'efectivo', monto: montos.efectivo },
       montos.tarjeta > 0 && { metodo: 'tarjeta', monto: montos.tarjeta, referencia: refTarjeta.trim() || undefined },
       montos.transferencia > 0 && { metodo: 'transferencia', monto: montos.transferencia, referencia: refTransferencia.trim() || undefined },
-      montos.credito > 0 && { metodo: 'credito', monto: montos.credito }
+      montos.credito > 0 && { metodo: 'credito', monto: montos.credito },
+      montos.puntos > 0 && { metodo: 'puntos', monto: montos.puntos }
     ].filter(Boolean);
     alCobrar(
       pagos,
@@ -68,7 +74,10 @@ export default function PanelCobro({ total, cliente, pideAutorizacion, creditoPe
   };
 
   // "Exacto": el método elegido cubre lo que falta
-  const exacto = (setter, actual) => setter(centavosATexto((pesosACentavos(actual) || 0) + falta));
+  const exacto = (setter, actual) => {
+    const deseado = (pesosACentavos(actual) || 0) + falta;
+    setter(centavosATexto(setter === setPuntos ? Math.min(deseado, disponiblePuntos) : deseado));
+  };
   const todoACredito = () => {
     setEfectivo('');
     setTarjeta('');
@@ -80,7 +89,8 @@ export default function PanelCobro({ total, cliente, pideAutorizacion, creditoPe
     ['Efectivo', efectivo, setEfectivo, null, null, primero],
     ['Tarjeta', tarjeta, setTarjeta, refTarjeta, setRefTarjeta],
     ['Transferencia', transferencia, setTransferencia, refTransferencia, setRefTransferencia],
-    conCredito && ['A crédito', credito, setCredito]
+    conCredito && ['A crédito', credito, setCredito],
+    lealtad && disponiblePuntos > 0 && ['Puntos', puntos, setPuntos]
   ].filter(Boolean);
 
   return (
@@ -98,6 +108,9 @@ export default function PanelCobro({ total, cliente, pideAutorizacion, creditoPe
           </div>
         )}
 
+        {lealtad && disponiblePuntos > 0 && (
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">{cliente.nombre} tiene {lealtad.puntos} puntos = {formatearDinero(disponiblePuntos)} para pagar</p>
+        )}
         <fieldset disabled={cobrando} className="space-y-3">
           {filas.map(([texto, valor, setValor, ref, setRef, refInput]) => (
             <div key={texto} className="grid grid-cols-[7rem_1fr_auto] gap-2 items-center">

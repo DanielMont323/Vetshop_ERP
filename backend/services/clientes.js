@@ -24,6 +24,7 @@ const publico = c => ({
   direccion: c.direccion || '',
   notas: c.notas || '',
   esPublicoGeneral: Boolean(c.esPublicoGeneral),
+  lealtad: { puntos: c.lealtad?.puntos || 0, costales: c.lealtad?.costales || 0 },
   credito: {
     activo: Boolean(c.credito?.activo),
     limite: c.credito?.limite || 0,

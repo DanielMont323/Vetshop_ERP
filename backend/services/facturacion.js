@@ -93,7 +93,7 @@ const totalesDe = conceptos => {
 // Forma de pago: la de mayor monto (efectivo sin el cambio). Con parte a crédito: PPD y «99 Por definir».
 function formaYMetodo(ventas) {
   if (ventas.some(v => v.pagos.some(p => p.metodo === 'credito'))) return { formaPago: '99', metodoPago: 'PPD' };
-  const montos = { efectivo: 0, tarjeta: 0, transferencia: 0 };
+  const montos = { efectivo: 0, tarjeta: 0, transferencia: 0, puntos: 0 };
   for (const v of ventas) {
     for (const p of v.pagos) montos[p.metodo] += p.monto;
     montos.efectivo -= v.cambio || 0;

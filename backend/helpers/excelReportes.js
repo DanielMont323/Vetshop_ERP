@@ -6,7 +6,7 @@ const { baseATexto } = require('./cantidades');
 const { formatearLocal } = require('./fechas');
 
 const MONEDA = '"$"#,##0.00';
-const METODOS = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', credito: 'A crédito' };
+const METODOS = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', credito: 'A crédito', puntos: 'Puntos' };
 const CANALES = { publico: 'Público', distribucion: 'Distribución' };
 
 function hoja(libro, nombre, columnas, filas) {
@@ -61,14 +61,14 @@ async function libroVentas(resumen, ventas, { titulo }) {
     ['Fecha', 'fecha', 18], ['Sucursal', 'sucursal', 18], ['Folio', 'folio', 10], ['Cliente', 'cliente', 26], ['Cajero', 'cajero', 20],
     ['Estado', 'estado', 11], ['Total', 'total', 14, true], ['IVA', 'iva', 12, true], ['Descuento', 'descuento', 12, true],
     ['Costo', 'costo', 12, true], ['Efectivo', 'efectivo', 12, true], ['Tarjeta', 'tarjeta', 12, true], ['Transferencia', 'transferencia', 14, true],
-    ['A crédito', 'credito', 12, true]
+    ['A crédito', 'credito', 12, true], ['Puntos', 'puntos', 10, true]
   ], ventas.map(v => {
     const metodo = m => aPesos(v.pagos.filter(p => p.metodo === m).reduce((s, p) => s + p.monto, 0) - (m === 'efectivo' ? v.cambio || 0 : 0));
     return {
       fecha: formatearLocal(v.fecha, 'dd/MM/yyyy HH:mm'), sucursal: v.sucursalNombre, folio: `${v.serie}-${v.folio}`, cliente: v.clienteNombre,
       cajero: v.cajeroNombre, estado: v.estado === 'cobrada' ? 'Cobrada' : 'Cancelada', total: aPesos(v.total), iva: aPesos(v.iva),
       descuento: aPesos(v.descuento), costo: aPesos(v.costo), efectivo: metodo('efectivo'), tarjeta: metodo('tarjeta'), transferencia: metodo('transferencia'),
-      credito: metodo('credito')
+      credito: metodo('credito'), puntos: metodo('puntos')
     };
   }));
 

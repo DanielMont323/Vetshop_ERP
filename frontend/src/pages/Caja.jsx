@@ -12,6 +12,7 @@ import PanelCobro from '../components/caja/PanelCobro';
 import VentasEspera from '../components/caja/VentasEspera';
 import GastoCaja from '../components/caja/GastoCaja';
 import ClienteContacto from '../components/clientes/ClienteContacto';
+import LealtadCliente, { participaEnLealtad } from '../components/caja/LealtadCliente';
 import SelectorReceta from '../components/caja/SelectorReceta';
 import { useDialogo } from '../contexts/DialogoContext';
 
@@ -37,19 +38,24 @@ export default function Caja() {
   const [turno, setTurno] = useState(undefined); // undefined = cargando, null = sin turno
   const [eligiendoReceta, setEligiendoReceta] = useState(null); // clave de la línea que elige receta
   const [motivos, setMotivos] = useState([]);
+  const [configLealtad, setConfigLealtad] = useState(null);
   const [cotizacion, setCotizacion] = useState({}); // clave de línea → precio que cobrará el servidor
   const [cotizando, setCotizando] = useState(false);
 
   useEffect(() => {
-    configuracionAPI.obtener().then(r => setMotivos(r.data.datos.descuentos?.motivos || [])).catch(() => setMotivos([]));
+    configuracionAPI.obtener().then(r => {
+      setMotivos(r.data.datos.descuentos?.motivos || []);
+      setConfigLealtad(r.data.datos.lealtad || null);
+    }).catch(() => setMotivos([]));
   }, []);
 
-  useEffect(() => {
+  const cargarClientes = useCallback(() => {
     clientesAPI.listar({ activo: true }).then(r => {
       setClientes(r.data.datos);
       setClienteId(id => id || r.data.datos[0]?.id || '');
     }).catch(e => toast.error(mensajeDeError(e, 'No se pudieron cargar los clientes')));
   }, []);
+  useEffect(cargarClientes, [cargarClientes]);
 
   useEffect(() => {
     turnosAPI.actual().then(r => setTurno(r.data.datos)).catch(() => setTurno(null));
@@ -103,12 +109,15 @@ export default function Caja() {
     else if (l.producto.requiereReceta && !l.receta) error = 'Requiere receta: elige una receta validada';
     else if (l.receta && cantidad > l.receta.pendiente) error = `La receta R-${l.receta.folio} solo permite surtir ${baseATexto(l.receta.pendiente, l.producto.unidad)}`;
     const bruto = p && cantidad && !Number.isNaN(cantidad) ? importeBruto(p.precio, cantidad, l.producto.unidad) : 0;
-    const descuento = Number.isNaN(pb) ? 0 : descuentoDe(bruto, pb);
+    const manual = Number.isNaN(pb) ? 0 : descuentoDe(bruto, pb);
+    const premioCostal = cotizada ? cot.descuentoLealtad || 0 : 0;
+    const descuento = Math.min(bruto, manual + premioCostal);
     return {
       precio: p?.precio ?? null, lista: p?.lista, cantidad, puntosBase: pb, bruto, descuento, importe: bruto - descuento, error,
       origen: cotizada ? cot.origenPrecio : 'lista', precioLista: cotizada ? cot.precioLista : null,
       escalaDesde: cotizada ? cot.escalaDesde : null, promocion: cotizada ? cot.promocion : null,
-      pidePin: descuento > 0 && (!motivo || motivo.requierePin)
+      premioCostal, premiosCostal: cotizada ? cot.premiosCostal || [] : [],
+      pidePin: manual > 0 && (!motivo || motivo.requierePin)
     };
   }), [lineas, lista, cotizacion, motivos]);
 
@@ -168,7 +177,8 @@ export default function Caja() {
       setCreditoPendiente(null);
       setClave(nuevaClaveOperacion());
       limpiar();
-      toast.success(`Venta ${venta.serie}-${venta.folio} cobrada${venta.cambio ? ` · Cambio ${formatearDinero(venta.cambio)}` : ''}`, { duration: 6000 });
+      toast.success(`Venta ${venta.serie}-${venta.folio} cobrada${venta.cambio ? ` · Cambio ${formatearDinero(venta.cambio)}` : ''}${venta.lealtad?.puntosGanados ? ` · +${venta.lealtad.puntosGanados} puntos` : ''}`, { duration: 6000 });
+      if (venta.lealtad) cargarClientes();
       if (imprimir) imprimirTicket(venta.id).catch(() => toast.error('No se pudo imprimir el ticket'));
     } catch (e) {
       // Crédito por encima del límite o con saldo vencido: el panel pide el PIN del dueño y se reintenta
@@ -250,6 +260,7 @@ export default function Caja() {
           )}
         </div>
         <div className="flex-1 overflow-y-auto">
+          <LealtadCliente cliente={cliente} config={configLealtad} />
           <Carrito motivos={motivos} lineas={lineas} calculos={calculos} alCambiar={cambiar} alQuitar={quitar} alElegirReceta={setEligiendoReceta} />
         </div>
       </div>
@@ -293,7 +304,7 @@ export default function Caja() {
       </aside>
 
       {panel === 'cobro' && (
-        <PanelCobro total={total} cliente={cliente} pideAutorizacion={pidePinDescuento} creditoPendiente={creditoPendiente} cobrando={cobrando} alCobrar={cobrar} alCerrar={() => { setPanel(null); setCreditoPendiente(null); enfocar('buscador-caja'); }} />
+        <PanelCobro total={total} cliente={cliente} pideAutorizacion={pidePinDescuento} lealtad={participaEnLealtad(cliente, configLealtad) ? { puntos: cliente.lealtad?.puntos || 0, valorPunto: configLealtad.valorPunto } : null} creditoPendiente={creditoPendiente} cobrando={cobrando} alCobrar={cobrar} alCerrar={() => { setPanel(null); setCreditoPendiente(null); enfocar('buscador-caja'); }} />
       )}
       {panel === 'espera' && <VentasEspera alRecuperar={recuperar} alCerrar={() => setPanel(null)} />}
       {panel === 'gasto' && turnoAbierto && <GastoCaja turnoId={turno.id} alCerrar={() => { setPanel(null); enfocar('buscador-caja'); }} />}

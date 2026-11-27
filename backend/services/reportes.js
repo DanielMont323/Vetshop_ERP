@@ -93,7 +93,7 @@ async function porFormaPago(alcance, r) {
     Venta.aggregate([matchVentas(alcance, r), { $group: { _id: null, cambio: { $sum: '$cambio' } } }])
   ]);
   const porMetodo = Object.fromEntries(pagos.map(p => [p._id, p]));
-  return ['efectivo', 'tarjeta', 'transferencia', 'credito'].map(metodo => ({
+  return ['efectivo', 'tarjeta', 'transferencia', 'credito', 'puntos'].map(metodo => ({
     metodo,
     ventas: porMetodo[metodo]?.ventas || 0,
     monto: (porMetodo[metodo]?.monto || 0) - (metodo === 'efectivo' ? cambio[0]?.cambio || 0 : 0)

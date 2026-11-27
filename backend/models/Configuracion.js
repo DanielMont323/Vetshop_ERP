@@ -23,6 +23,11 @@ const motivoSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// Programa de lealtad. Porcentajes en puntos base; montos en centavos.
+const ESCALONES_PUNTOS = [{ hasta: 50000, porcentaje: 500 }, { hasta: 150000, porcentaje: 1000 }, { hasta: null, porcentaje: 1500 }];
+const PREMIOS_COSTAL = [{ numero: 5, porcentaje: 500 }, { numero: 10, porcentaje: 1000 }, { numero: 15, porcentaje: 1500 }];
+const pb = { type: Number, required: true, min: 0, max: 10000, validate: { validator: Number.isSafeInteger, message: 'Puntos base enteros' } };
+
 const configuracionSchema = new mongoose.Schema(
   {
     clave: { type: String, required: true, default: 'general' },
@@ -33,6 +38,18 @@ const configuracionSchema = new mongoose.Schema(
         validate: { validator: l => l.length >= 1 && l.length <= 20 && new Set(l.map(c => c.toLowerCase())).size === l.length, message: 'De 1 a 20 conceptos, sin repetir' }
       },
       topeGastoSinPin: { type: Number, min: 0, default: 30000, validate: { validator: Number.isSafeInteger, message: 'Centavos enteros' } }
+    },
+    lealtad: {
+      activa: { type: Boolean, default: true },
+      valorPunto: { type: Number, min: 1, max: 10000, default: 10, validate: { validator: Number.isSafeInteger, message: 'Centavos enteros' } }, // 10 = $0.10
+      escalones: {
+        type: [new mongoose.Schema({ hasta: { type: Number, default: null }, porcentaje: pb }, { _id: false })],
+        default: () => ESCALONES_PUNTOS.map(e => ({ ...e }))
+      },
+      premiosCostal: {
+        type: [new mongoose.Schema({ numero: { type: Number, required: true, min: 1, max: 100 }, porcentaje: pb }, { _id: false })],
+        default: () => PREMIOS_COSTAL.map(p => ({ ...p }))
+      }
     },
     descuentos: {
       motivos: {
@@ -50,3 +67,5 @@ configuracionSchema.index({ clave: 1 }, { unique: true });
 module.exports = mongoose.model('Configuracion', configuracionSchema, 'configuracion');
 module.exports.CONCEPTOS_GASTO = CONCEPTOS_GASTO;
 module.exports.MOTIVOS_DESCUENTO = MOTIVOS_DESCUENTO;
+module.exports.ESCALONES_PUNTOS = ESCALONES_PUNTOS;
+module.exports.PREMIOS_COSTAL = PREMIOS_COSTAL;

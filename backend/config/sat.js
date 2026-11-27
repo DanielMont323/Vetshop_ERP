@@ -31,8 +31,8 @@ const USOS_CFDI = {
 };
 
 // Formas de pago del SAT (las que usa la caja)
-const FORMAS_PAGO = { '01': 'Efectivo', '03': 'Transferencia electrónica de fondos', '04': 'Tarjeta de crédito', '28': 'Tarjeta de débito', '99': 'Por definir' };
-const FORMA_POR_METODO = { efectivo: '01', transferencia: '03', tarjeta: '04' };
+const FORMAS_PAGO = { '01': 'Efectivo', '03': 'Transferencia electrónica de fondos', '04': 'Tarjeta de crédito', '05': 'Monedero electrónico', '28': 'Tarjeta de débito', '99': 'Por definir' };
+const FORMA_POR_METODO = { efectivo: '01', transferencia: '03', tarjeta: '04', puntos: '05' };
 
 const MOTIVOS_CANCELACION = {
   '01': 'Comprobante emitido con errores con relación',

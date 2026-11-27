@@ -155,6 +155,7 @@ export const clientesAPI = {
   listar: params => api.get('/clientes', { params }),
   rapido: datos => api.post('/clientes/rapido', datos),
   contacto: (id, datos) => api.patch(`/clientes/${id}/contacto`, datos),
+  lealtad: id => api.get(`/clientes/${id}/lealtad`),
   crear: datos => api.post('/clientes', datos),
   actualizar: (id, datos) => api.patch(`/clientes/${id}`, datos)
 };

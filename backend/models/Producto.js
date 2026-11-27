@@ -68,6 +68,8 @@ const productoSchema = new mongoose.Schema(
     requiereReceta: { type: Boolean, default: false },
     esControlado: { type: Boolean, default: false },
     requiereRefrigeracion: { type: Boolean, default: false },
+    // Costal de alimento premium: suma al programa de lealtad por costales (solo alimento por pieza)
+    alimentoPremium: { type: Boolean, default: false },
     iva: { type: String, enum: { values: TIPOS_IVA, message: 'Tipo de IVA inválido' }, required: true },
     activo: { type: Boolean, default: true },
     minimos: { type: [minimoSchema], default: [] },
@@ -88,6 +90,7 @@ productoSchema.pre('validate', function () {
   if (this.claveUnidadSat === '') this.claveUnidadSat = undefined;
   // Un medicamento controlado siempre exige receta
   if (this.esControlado) this.requiereReceta = true;
+  if (this.categoria !== 'alimento' || this.unidad !== 'pieza') this.alimentoPremium = false;
 });
 
 productoSchema.path('minimos').validate(function (lista) {
