@@ -1,5 +1,5 @@
 import { Link, NavLink, Navigate, Outlet } from 'react-router-dom';
-import { ArrowLeftRight, BarChart3, ClipboardList, HandCoins, Landmark, Receipt, Thermometer, Settings, Boxes, Calculator, FileText, KeyRound, LogOut, Package, PawPrint, ReceiptText, ShoppingCart, Store, Tags, Truck, Users } from 'lucide-react';
+import { ArrowLeftRight, BarChart3, BookUser, ClipboardList, HandCoins, Landmark, Receipt, Thermometer, Settings, Boxes, Calculator, FileText, KeyRound, LogOut, Package, PawPrint, ReceiptText, ShoppingCart, Store, Tags, Truck, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const NOMBRES_ROL = {
@@ -31,6 +31,7 @@ export default function Layout() {
                 puede('ventas:cobrar') && ['/caja', 'Caja', ShoppingCart],
                 puede('corte:capturar_conteo') && ['/corte', 'Turno y corte', Calculator],
                 (puede('ventas:ver_todas') || puede('ventas:ver_propias_del_dia')) && ['/ventas', 'Ventas', ReceiptText],
+                (puede('clientes:registrar') || puede('clientes:gestionar')) && ['/clientes', 'Clientes', BookUser],
                 (puede('cobranza:ver') || puede('cobranza:registrar_abono')) && ['/cobranza', 'Cobranza', HandCoins],
                 puede('facturacion:emitir') && ['/facturas', 'Facturas', Receipt],
                 puede('recetas:capturar') && ['/recetas', 'Recetas', FileText],

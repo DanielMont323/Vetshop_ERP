@@ -27,6 +27,7 @@ import ComprasSugeridas from './pages/ComprasSugeridas';
 import Metas from './pages/Metas';
 import Facturas from './pages/Facturas';
 import Autofactura from './pages/Autofactura';
+import Directorio from './pages/Directorio';
 import MiAvance from './components/metas/MiAvance';
 
 function Inicio() {
@@ -71,6 +72,7 @@ export default function App() {
             <Route path="/cadena-frio" element={<Protegida permisos={['cadena_frio:capturar']}><CadenaFrio /></Protegida>} />
             <Route path="/compras-sugeridas" element={<Protegida permisos={['recepcion:registrar']}><ComprasSugeridas /></Protegida>} />
             <Route path="/metas" element={<Protegida permisos={['reportes:ver']}><Metas /></Protegida>} />
+            <Route path="/clientes" element={<Protegida permisos={['clientes:registrar', 'clientes:gestionar']}><Directorio /></Protegida>} />
             <Route path="/facturas" element={<Protegida permisos={['facturacion:emitir']}><Facturas /></Protegida>} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

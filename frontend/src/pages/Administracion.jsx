@@ -2,10 +2,11 @@ import { useState } from 'react';
 import Usuarios from '../components/admin/Usuarios';
 import Sucursales from '../components/admin/Sucursales';
 import Clientes from '../components/admin/Clientes';
+import ConfiguracionCaja from '../components/admin/ConfiguracionCaja';
 
-const PESTANAS = [['usuarios', 'Usuarios', Usuarios], ['sucursales', 'Sucursales', Sucursales], ['clientes', 'Clientes', Clientes]];
+const PESTANAS = [['usuarios', 'Usuarios', Usuarios], ['sucursales', 'Sucursales', Sucursales], ['clientes', 'Clientes', Clientes], ['caja', 'Caja', ConfiguracionCaja]];
 
-// Administración (dueño): usuarios, sucursales y clientes.
+// Administración (dueño): usuarios, sucursales, clientes y configuración de la caja.
 export default function Administracion() {
   const [pestana, setPestana] = useState('usuarios');
   const Contenido = PESTANAS.find(p => p[0] === pestana)[2];
