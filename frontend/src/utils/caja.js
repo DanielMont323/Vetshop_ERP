@@ -50,6 +50,12 @@ export async function imprimirTicket(ventaId, ancho = 80) {
   await imprimirHtml(data);
 }
 
+// Nota de venta (remisión) en hoja carta, para clientes de distribución
+export async function imprimirNota(ventaId) {
+  const { data } = await ventasAPI.nota(ventaId);
+  await imprimirHtml(data);
+}
+
 export async function imprimirCorte(turnoId, ancho = 80) {
   const { data } = await turnosAPI.corte(turnoId, ancho);
   await imprimirHtml(data);

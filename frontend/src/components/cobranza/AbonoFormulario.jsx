@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { cobranzaAPI, mensajeDeError } from '../../services/api';
 import { centavosATexto, formatearDinero, pesosACentavos } from '../../utils/formato';
 import { imprimirAbono, nuevaClaveOperacion } from '../../utils/caja';
+import AbonoResultado from './AbonoResultado';
 
 // Registrar un abono. Se aplica a las ventas que vencen primero; si con él se liquida una venta dentro del
 // plazo de pronto pago, el servidor aplica la bonificación. Efectivo y tarjeta entran al corte del turno.
@@ -16,6 +17,7 @@ export default function AbonoFormulario({ estado, alCerrar, alRegistrar }) {
   const [imprimir, setImprimir] = useState(true);
   const [clave] = useState(nuevaClaveOperacion);
   const [enviando, setEnviando] = useState(false);
+  const [resultado, setResultado] = useState(null); // { abono, detalle }
 
   const centavos = pesosACentavos(monto);
   let error = null;
@@ -32,13 +34,16 @@ export default function AbonoFormulario({ estado, alCerrar, alRegistrar }) {
       const abono = r.data.datos;
       toast.success(`Abono ${abono.serie}-${abono.folio} registrado${abono.bonificacion ? ` · bonificación ${formatearDinero(abono.bonificacion)}` : ''}`, { duration: 6000 });
       if (imprimir) imprimirAbono(abono.id).catch(() => toast.error('No se pudo imprimir el comprobante'));
-      alRegistrar(abono);
+      if (r.data.detalle) setResultado({ abono, detalle: r.data.detalle });
+      else alRegistrar(abono);
     } catch (err) {
       toast.error(mensajeDeError(err, 'No se pudo registrar el abono'), { duration: 6000 });
     } finally {
       setEnviando(false);
     }
   };
+
+  if (resultado) return <AbonoResultado detalle={resultado.detalle} alCerrar={() => alRegistrar(resultado.abono)} />;
 
   return (
     <div className="fixed inset-0 bg-slate-900/40 grid place-items-center p-4 z-20" role="dialog" aria-modal="true">

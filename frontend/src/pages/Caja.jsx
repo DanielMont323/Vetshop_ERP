@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { clientesAPI, configuracionAPI, mensajeDeError, metasAPI, productosAPI, turnosAPI, ventasAPI } from '../services/api';
 import { baseATexto, cantidadABase, formatearDinero } from '../utils/formato';
-import { descuentoDe, imprimirTicket, importeBruto, nuevaClaveOperacion, porcentajeAPuntosBase, precioPara } from '../utils/caja';
+import { descuentoDe, imprimirNota, imprimirTicket, importeBruto, nuevaClaveOperacion, porcentajeAPuntosBase, precioPara } from '../utils/caja';
 import BuscadorProducto from '../components/BuscadorProducto';
 import Carrito from '../components/caja/Carrito';
 import PanelCobro from '../components/caja/PanelCobro';
@@ -174,7 +174,7 @@ export default function Caja() {
         ...(vendedorId && { vendedor: vendedorId })
       });
       const venta = r.data.datos;
-      setUltima(venta);
+      setUltima({ ...venta, distribucion: Boolean(cliente && cliente.tipo !== 'publico') });
       setPanel(null);
       setCreditoPendiente(null);
       setClave(nuevaClaveOperacion());
@@ -312,6 +312,7 @@ export default function Caja() {
             <p className="font-semibold">Última venta: {ultima.serie}-{ultima.folio}</p>
             <p>Total {formatearDinero(ultima.total)}{ultima.cambio > 0 && <> · Cambio <strong>{formatearDinero(ultima.cambio)}</strong></>}</p>
             <button type="button" onClick={() => imprimirTicket(ultima.id).catch(e => toast.error(mensajeDeError(e, 'No se pudo imprimir')))} className="flex items-center gap-1 text-emerald-800 underline"><Printer size={14} /> Reimprimir ticket</button>
+            {ultima.distribucion && <button type="button" onClick={() => imprimirNota(ultima.id).catch(e => toast.error(mensajeDeError(e, 'No se pudo imprimir')))} className="flex items-center gap-1 text-emerald-800 underline"><Printer size={14} /> Nota de venta (carta)</button>}
           </div>
         )}
       </aside>
