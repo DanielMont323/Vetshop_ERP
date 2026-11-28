@@ -43,6 +43,19 @@ const abonoSchema = new mongoose.Schema(
       usuario: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
       autorizadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' }
     },
+    // Complementos de pago (CFDI tipo P) que se timbraron por este abono, uno por factura PPD cubierta
+    complementos: [{
+      _id: false,
+      factura: { type: mongoose.Schema.Types.ObjectId, ref: 'Factura', required: true },
+      folioFactura: String,
+      monto: Number,
+      estado: { type: String, enum: ['timbrado', 'error'], required: true },
+      complemento: { type: mongoose.Schema.Types.ObjectId, ref: 'Factura' },
+      folio: String,
+      uuid: String,
+      mensaje: String,
+      fecha: { type: Date, default: Date.now }
+    }],
     // Un reintento (doble clic, red lenta) no registra el abono dos veces
     claveOperacion: { type: String, required: true }
   },

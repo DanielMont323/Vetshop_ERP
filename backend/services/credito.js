@@ -255,6 +255,10 @@ async function cancelarAbono(alcance, actor, id, { motivo, autorizacion }) {
     const abono = await AbonoCliente.findOne({ _id: aId(id), sucursal }).session(session).lean();
     if (!abono) throw noEncontrado('Abono no encontrado');
     if (abono.estado !== 'aplicado') throw conflicto('El abono ya está cancelado', 'ABONO_CANCELADO');
+    const vigentes = await require('./abonosDistribucion').complementosVigentes(abono);
+    if (vigentes.length) {
+      throw conflicto(`El abono tiene complementos de pago vigentes (${vigentes.map(f => `${f.serie}-${f.folio}`).join(', ')}): cancélalos primero en Facturas`, 'ABONO_CON_COMPLEMENTO');
+    }
     if (abono.turno) {
       const abierto = await Turno.findOneAndUpdate({ _id: abono.turno, sucursal, estado: 'abierto' }, { $set: { ultimoMovimiento: fecha } }, { session });
       if (!abierto) throw conflicto('El turno en que se recibió el abono ya no está abierto: ya no se puede cancelar', 'TURNO_NO_ABIERTO');
