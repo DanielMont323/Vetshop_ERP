@@ -16,7 +16,8 @@
     "importar": "node scripts/importar.js",
     "plantilla-importacion": "node scripts/plantillaImportacion.js",
     "seed-demo": "node scripts/seedDemo.js",
-    "preparar-bd": "node scripts/prepararBD.js"
+    "preparar-bd": "node scripts/prepararBD.js",
+    "demo-fase3": "node scripts/demoFase3.js"
   },
   "dependencies": {
     "@vercel/blob": "^2.9.0",

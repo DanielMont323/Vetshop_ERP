@@ -1,6 +1,7 @@
 // Datos de DEMOSTRACIÓN (todo inventado, marcado "(prueba)"): sucursales, usuarios, catálogo con
 // precios, inventario inicial (con un lote caducado y uno por caducar), proveedores y clientes, y los datos
-// de la Fase 2 (datosDemoFase2.js): ventas, crédito, cuentas por pagar, cadena de frío, metas y una factura.
+// de la Fase 2 (datosDemoFase2.js): ventas, crédito, cuentas por pagar, cadena de frío, metas y una factura, y los
+// de la Fase 3 (datosDemoFase3.js): promociones, lealtad, mascotas, recordatorios y pedidos.
 // Lo usan dev:memoria (Mongo en memoria) y seed-demo (una base de demostración vacía).
 const Sucursal = require('../models/Sucursal');
 const Usuario = require('../models/Usuario');
@@ -12,6 +13,7 @@ const inv = require('../services/inventario');
 const { conTransaccion } = require('../helpers/transaccion');
 const { formatearLocal } = require('../helpers/fechas');
 const { sembrarFase2 } = require('./datosDemoFase2');
+const { sembrarFase3 } = require('./datosDemoFase3');
 
 const CATALOGO = [
   { sku: 'CRQ-AD-20', codigoBarras: '7500000000011', nombre: 'Croquetas Perro Adulto (prueba)', categoria: 'alimento', unidad: 'pieza', presentacion: 'Costal 20 kg', iva: 'tasa_0', precios: { publico: 129900, mayoreo: 115000, clinica: 112000 } },
@@ -97,6 +99,7 @@ async function sembrar({ password, pinDueno, pinMedico }) {
     { nombre: 'Estética Peludos (prueba)', tipo: 'estetica', listaPrecios: 'mayoreo' }
   ]);
   await sembrarFase2({ centro, norte, almacen, productos, pinDueno, pinMedico });
+  await sembrarFase3();
   return usuarios.map(u => u.usuario);
 }
 

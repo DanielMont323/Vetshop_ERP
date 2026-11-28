@@ -46,10 +46,10 @@ test('Fase 2: ventas, cartera con vencido, cuentas por pagar, traspasos, recetas
   const cartera = (await get('/api/cobranza/cartera')).body;
   const peludos = cartera.datos.find(f => f.cliente.nombre === 'Estética Peludos (prueba)');
   expect(peludos.vencido).toBeGreaterThan(0);
-  expect(cartera.datos.find(f => f.cliente.nombre === 'Clínica Patitas (prueba)').saldo).toBe(224000 - 50000);
+  expect(cartera.datos.find(f => f.cliente.nombre === 'Clínica Patitas (prueba)').saldo).toBe(224000 - 50000 - 30000); // abono de la Fase 2 y de la Fase 3
 
   const porPagar = (await h.request(h.app).get('/api/cuentas-por-pagar').set(h.auth(token))).body;
-  expect(porPagar.resumen).toMatchObject({ facturas: 2, venceSemana: 155000 });
+  expect(porPagar.resumen).toMatchObject({ facturas: 3, venceSemana: 155000 }); // + DEMO-201 de la Fase 3 (vence en 30 días)
   expect(porPagar.resumen.vencido).toBe(250000 - 100000);
 
   // Cuatro semanas de ventas en Centro y Norte
@@ -79,4 +79,39 @@ test('Fase 2: ventas, cartera con vencido, cuentas por pagar, traspasos, recetas
   const tablero = (await get('/api/reportes/dashboard')).body.datos;
   expect(tablero.alertas).toMatchObject({ lecturasFueraDeRango: 1 });
   expect(tablero.metas).toHaveLength(1);
+});
+
+test('Fase 3: promociones, lealtad, mascotas, recordatorios, gastos de caja, pedidos y complemento de pago', async () => {
+  const get = ruta => h.request(h.app).get(ruta).set(h.auth(token, centro.id));
+  const { yaCargada } = require('../scripts/datosDemoFase3');
+  expect(await yaCargada()).toBe(true);
+
+  expect((await get('/api/promociones?estado=vigentes')).body.datos.map(p => p.nombre).sort()).toEqual(['Accesorios 10 % (prueba)', 'Vacunas por caducar (prueba)']);
+  expect((await get('/api/promociones?estado=proximas')).body.datos).toHaveLength(1);
+  const cfg = (await get('/api/configuracion')).body.datos;
+  expect(cfg.descuentos.motivos[0]).toEqual({ nombre: 'Cliente frecuente', maximo: 1000, requierePin: false });
+
+  const clientes = (await get('/api/clientes')).body.datos;
+  const ana = clientes.find(c => c.nombre === 'Ana Martínez (prueba)');
+  expect(ana.lealtad.costales).toBe(5);
+  expect(ana.lealtad.puntos).toBeGreaterThan(0);
+  const movimientos = (await get(`/api/clientes/${ana.id}/lealtad`)).body.datos.movimientos.map(m => m.tipo);
+  expect(movimientos).toEqual(expect.arrayContaining(['acumulo', 'canje']));
+  expect((await get(`/api/mascotas?cliente=${ana.id}`)).body.datos.map(m => m.nombre)).toEqual(['Max', 'Michi']);
+
+  expect((await get('/api/recordatorios?vista=hoy')).body.datos).toHaveLength(3);
+  expect((await get('/api/recordatorios?vista=proximos')).body.datos).toHaveLength(1);
+  expect((await get('/api/recordatorios?vista=avisados')).body.datos).toHaveLength(1);
+
+  const turno = (await h.request(h.app).get('/api/turnos/actual').set(h.auth((await h.login('cajero.centro', 'Demo-12345')).body.datos.token, centro.id))).body.datos;
+  expect(turno.retiros.filter(r => r.tipo === 'gasto')).toHaveLength(2);
+
+  const almacen = (await h.request(h.app).get('/api/sucursales').set(h.auth(token))).body.datos.find(s => s.nombre === 'Almacén (prueba)');
+  const peds = (await h.request(h.app).get('/api/pedidos').set(h.auth(token, almacen.id))).body.datos;
+  expect(peds.map(p => p.estado).sort()).toEqual(['borrador', 'enviado', 'parcial']);
+
+  const facturas = (await get('/api/facturas')).body.datos;
+  expect(facturas.some(f => f.tipo === 'P' && f.estado === 'timbrada')).toBe(true);
+  const sugeridas = (await get('/api/compras/sugeridas?todos=true')).body.datos;
+  expect(sugeridas.find(f => f.producto.sku === 'CRQ-AD-20')).toBeTruthy();
 });
