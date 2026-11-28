@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const PedidoProveedor = require('../models/PedidoProveedor');
 const Proveedor = require('../models/Proveedor');
 const Producto = require('../models/Producto');
+const { PUNTOS_BASE_IVA } = Producto;
 const { siguienteFolio } = require('../models/Contador');
 const { conTransaccion } = require('../helpers/transaccion');
 const { conAlcance, sucursalDeEscritura } = require('../helpers/alcance');
@@ -36,7 +37,7 @@ async function armar(datos, session) {
     const prod = productos.get(String(p.producto));
     if (!prod) throw solicitudInvalida(`Partida ${i + 1}: producto no encontrado`);
     return {
-      producto: prod._id, sku: prod.sku, nombre: prod.nombre, presentacion: prod.presentacion || undefined, unidad: prod.unidad,
+      producto: prod._id, sku: prod.sku, nombre: prod.nombre, presentacion: prod.presentacion || undefined, unidad: prod.unidad, tasaIva: PUNTOS_BASE_IVA[prod.iva],
       cantidad: p.cantidad, ...(p.costoEstimado !== undefined && p.costoEstimado !== null && { costoEstimado: p.costoEstimado })
     };
   });

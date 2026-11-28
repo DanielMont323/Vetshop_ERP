@@ -31,7 +31,7 @@ export function descuentoDe(bruto, puntosBase) {
 }
 
 // Imprime un HTML (ticket o corte) en un iframe oculto, sin abrir ventanas emergentes
-async function imprimirHtml(html) {
+export async function imprimirHtml(html) {
   const marco = document.createElement('iframe');
   marco.style.cssText = 'position:fixed;width:0;height:0;border:0;right:0;bottom:0';
   marco.setAttribute('sandbox', 'allow-modals allow-same-origin');

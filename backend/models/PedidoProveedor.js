@@ -17,6 +17,7 @@ const partidaSchema = new mongoose.Schema(
     nombre: { type: String, required: true },
     presentacion: String,
     unidad: { type: String, enum: ['pieza', 'kg'], required: true },
+    tasaIva: { type: Number, min: 0, default: 0 }, // puntos base (para prellenar la recepción)
     cantidad: { type: Number, required: true, min: 1, validate: entero }, // piezas o gramos
     costoEstimado: { type: Number, min: 0, validate: entero },
     recibido: { type: Number, default: 0, min: 0, validate: entero }

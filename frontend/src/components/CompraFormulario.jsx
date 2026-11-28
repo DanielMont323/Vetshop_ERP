@@ -76,7 +76,7 @@ export default function CompraFormulario({ compra, alCerrar, alGuardar }) {
       if (temperatura !== undefined && Number.isNaN(temperatura)) return { error: `${p.nombre}: temperatura inválida` };
       filas.push({ producto: p.producto, cantidad, costoUnitario: costo, lote: p.lote.trim() || undefined, caducidad: p.caducidad.trim() || undefined, temperaturaLlegada: temperatura });
     }
-    const cuerpo = { ...cab, folioFactura: cab.folioFactura.trim(), observaciones: cab.observaciones.trim() || undefined, partidas: filas };
+    const cuerpo = { ...cab, folioFactura: cab.folioFactura.trim(), observaciones: cab.observaciones.trim() || undefined, partidas: filas, ...(compra?.pedido && { pedido: compra.pedido }) };
     if (cab.condicionPago === 'credito' && cab.diasCredito !== '') cuerpo.diasCredito = Number(cab.diasCredito);
     else delete cuerpo.diasCredito;
     return { cuerpo };
