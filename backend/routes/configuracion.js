@@ -40,4 +40,40 @@ router.put(
   }
 );
 
+// ---- Marcas de las notas y tickets (Vet Shop para negocios, Huellitas Vetshop para mostrador) ----
+const marcas = require('../services/marcas');
+const { CLAVES, RE_IMAGEN, MAX_CARACTERES } = require('../models/Logo');
+const { param } = require('express-validator');
+
+router.get('/marcas', async (req, res) => {
+  res.json({ ok: true, datos: await marcas.obtener() });
+});
+
+const reglaMarca = clave => [
+  body(`${clave}`).optional().isObject(),
+  body(`${clave}.nombre`).optional().isString().trim().isLength({ min: 1, max: 80 }).withMessage('Nombre: de 1 a 80 caracteres'),
+  body(`${clave}.lema`).optional().isString().trim().isLength({ max: 120 }),
+  body(`${clave}.rfc`).optional().isString().trim().toUpperCase().custom(v => v === '' || /^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/.test(v)).withMessage('RFC inválido'),
+  body(`${clave}.direccion`).optional().isString().trim().isLength({ max: 300 }),
+  body(`${clave}.telefono`).optional().isString().trim().isLength({ max: 30 })
+];
+
+router.put('/marcas', requirePermiso('configuracion:gestionar'), validar([...reglaMarca('negocio'), ...reglaMarca('mostrador')]), async (req, res) => {
+  res.json({ ok: true, datos: await marcas.actualizar(req.user, req.datos) });
+});
+
+const claveLogo = param('clave').isIn(CLAVES).withMessage('Logo inválido');
+router.put(
+  '/logos/:clave',
+  requirePermiso('configuracion:gestionar'),
+  validar([claveLogo, body('imagen').isString().isLength({ max: MAX_CARACTERES }).withMessage('La imagen es muy grande (máximo ≈ 290 KB)').bail().matches(RE_IMAGEN).withMessage('Imagen inválida (PNG, JPG o WEBP)')]),
+  async (req, res) => {
+    res.json({ ok: true, datos: await marcas.guardarLogo(req.user, req.datos.clave, req.datos.imagen) });
+  }
+);
+
+router.delete('/logos/:clave', requirePermiso('configuracion:gestionar'), validar([claveLogo]), async (req, res) => {
+  res.json({ ok: true, datos: await marcas.quitarLogo(req.user, req.datos.clave) });
+});
+
 module.exports = router;

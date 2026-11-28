@@ -26,6 +26,13 @@ export function porcentajeAPuntosBase(texto) {
   return pb > 10000 ? NaN : pb;
 }
 
+// Puntos de lealtad por una compra: el porcentaje del escalón en pesos, hacia abajo (services/lealtad.js)
+export function puntosPorCompra(base, config) {
+  if (!config || base <= 0) return 0;
+  const escalon = config.escalones.find(e => e.hasta === null || base <= e.hasta);
+  return escalon ? Math.floor((base * escalon.porcentaje) / 1000000) : 0;
+}
+
 export function descuentoDe(bruto, puntosBase) {
   return puntosBase ? dividir(bruto * puntosBase, 10000) : 0;
 }

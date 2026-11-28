@@ -51,6 +51,23 @@ const configuracionSchema = new mongoose.Schema(
         default: () => PREMIOS_COSTAL.map(p => ({ ...p }))
       }
     },
+    // Marcas de las notas y tickets (los logos van en la colección logos)
+    marcas: {
+      negocio: {
+        nombre: { type: String, trim: true, maxlength: 80, default: 'Vet Shop' },
+        lema: { type: String, trim: true, maxlength: 120, default: 'Impulsando el cuidado que ellos merecen' },
+        rfc: { type: String, trim: true, maxlength: 13, default: '' },
+        direccion: { type: String, trim: true, maxlength: 300, default: '' },
+        telefono: { type: String, trim: true, maxlength: 30, default: '' }
+      },
+      mostrador: {
+        nombre: { type: String, trim: true, maxlength: 80, default: 'Huellitas Vetshop' },
+        lema: { type: String, trim: true, maxlength: 120, default: '' },
+        rfc: { type: String, trim: true, maxlength: 13, default: '' },
+        direccion: { type: String, trim: true, maxlength: 300, default: '' },
+        telefono: { type: String, trim: true, maxlength: 30, default: '' }
+      }
+    },
     descuentos: {
       motivos: {
         type: [motivoSchema],

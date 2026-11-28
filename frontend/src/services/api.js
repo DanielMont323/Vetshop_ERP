@@ -163,7 +163,11 @@ export const promocionesAPI = {
 
 export const configuracionAPI = {
   obtener: () => api.get('/configuracion'),
-  actualizar: datos => api.put('/configuracion', datos)
+  actualizar: datos => api.put('/configuracion', datos),
+  marcas: () => api.get('/configuracion/marcas'),
+  actualizarMarcas: datos => api.put('/configuracion/marcas', datos),
+  guardarLogo: (clave, imagen) => api.put(`/configuracion/logos/${clave}`, { imagen }),
+  quitarLogo: clave => api.delete(`/configuracion/logos/${clave}`)
 };
 
 export const clientesAPI = {

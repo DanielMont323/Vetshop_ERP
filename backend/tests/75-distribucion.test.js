@@ -54,13 +54,15 @@ describe('nota de venta', () => {
     const r = await api(cajero, 'get', `/api/ventas/${v1.id}/nota`);
     expect(r.status).toBe(200);
     expect(r.headers['content-type']).toMatch(/html/);
-    expect(r.text).toContain('NOTA DE VENTA');
+    expect(r.text).toContain('Por el presente pagaré');
+    expect(r.text).toContain('<h1>Vet Shop</h1>'); // cliente con negocio
     expect(r.text).toContain('size: letter');
     expect(r.text).toContain('CPA850101AB1');
     expect(r.text).toContain('Av. México 100, Tepic');
     expect(r.text).toContain('Vence el');
     expect(r.text).toContain('Collar &lt;b&gt;Pro&lt;/b&gt;');
-    expect(r.text).toContain('$580.00');
+    expect(r.text).toContain('<td>TOTAL</td><td>580.00</td>');
+    expect(r.text).toContain('<td>IVA</td><td>80.00</td>');
   });
 });
 
