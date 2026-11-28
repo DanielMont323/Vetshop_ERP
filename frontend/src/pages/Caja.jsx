@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, PauseCircle, Printer, ReceiptText, UserPlus, Wallet } from 'lucide-react';
+import { BellPlus, Clock, PauseCircle, Printer, ReceiptText, UserPlus, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { clientesAPI, configuracionAPI, mensajeDeError, metasAPI, productosAPI, turnosAPI, ventasAPI } from '../services/api';
@@ -13,6 +13,7 @@ import VentasEspera from '../components/caja/VentasEspera';
 import GastoCaja from '../components/caja/GastoCaja';
 import ClienteContacto from '../components/clientes/ClienteContacto';
 import LealtadCliente, { participaEnLealtad } from '../components/caja/LealtadCliente';
+import RecordatorioFormulario from '../components/recordatorios/RecordatorioFormulario';
 import SelectorReceta from '../components/caja/SelectorReceta';
 import { useDialogo } from '../contexts/DialogoContext';
 
@@ -41,6 +42,7 @@ export default function Caja() {
   const [configLealtad, setConfigLealtad] = useState(null);
   const [cotizacion, setCotizacion] = useState({}); // clave de línea → precio que cobrará el servidor
   const [cotizando, setCotizando] = useState(false);
+  const [sugerencia, setSugerencia] = useState(null); // { cliente, producto } tras vender alimento a un cliente registrado
 
   useEffect(() => {
     configuracionAPI.obtener().then(r => {
@@ -179,6 +181,8 @@ export default function Caja() {
       limpiar();
       toast.success(`Venta ${venta.serie}-${venta.folio} cobrada${venta.cambio ? ` · Cambio ${formatearDinero(venta.cambio)}` : ''}${venta.lealtad?.puntosGanados ? ` · +${venta.lealtad.puntosGanados} puntos` : ''}`, { duration: 6000 });
       if (venta.lealtad) cargarClientes();
+      const alimento = lineas.find(l => l.producto.categoria === 'alimento');
+      setSugerencia(!esPublico && alimento && puede('clientes:registrar') ? { cliente, producto: alimento.producto } : null);
       if (imprimir) imprimirTicket(venta.id).catch(() => toast.error('No se pudo imprimir el ticket'));
     } catch (e) {
       // Crédito por encima del límite o con saldo vencido: el panel pide el PIN del dueño y se reintenta
@@ -291,6 +295,15 @@ export default function Caja() {
           <button type="button" onClick={() => setPanel('espera')} className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 hover:bg-slate-50"><Clock size={16} /> Ventas en espera</button>
           <button type="button" onClick={limpiar} disabled={!lineas.length} className="rounded-lg border border-slate-300 px-3 py-2 hover:bg-slate-50 disabled:opacity-50">Vaciar carrito</button>
           <Link to="/ventas" className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 hover:bg-slate-50"><ReceiptText size={16} /> Ventas del día</Link>
+          {sugerencia && (
+            <div className="rounded-lg bg-sky-50 p-3 text-sm text-sky-900 space-y-2">
+              <p>¿Recordarle a {sugerencia.cliente.nombre} su próximo <strong>{sugerencia.producto.nombre}</strong>?</p>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setPanel('recordatorio')} className="flex items-center gap-1 rounded-lg bg-sky-700 text-white px-3 py-1.5"><BellPlus size={16} /> Programar</button>
+                <button type="button" onClick={() => setSugerencia(null)} className="rounded-lg border border-sky-300 px-3 py-1.5">No</button>
+              </div>
+            </div>
+          )}
           <button type="button" onClick={() => setPanel('gasto')} disabled={!turnoAbierto} className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 hover:bg-slate-50 disabled:opacity-50"><Wallet size={16} /> Gasto de caja (mandadito…)</button>
         </div>
 
@@ -307,6 +320,13 @@ export default function Caja() {
         <PanelCobro total={total} cliente={cliente} pideAutorizacion={pidePinDescuento} lealtad={participaEnLealtad(cliente, configLealtad) ? { puntos: cliente.lealtad?.puntos || 0, valorPunto: configLealtad.valorPunto } : null} creditoPendiente={creditoPendiente} cobrando={cobrando} alCobrar={cobrar} alCerrar={() => { setPanel(null); setCreditoPendiente(null); enfocar('buscador-caja'); }} />
       )}
       {panel === 'espera' && <VentasEspera alRecuperar={recuperar} alCerrar={() => setPanel(null)} />}
+      {panel === 'recordatorio' && sugerencia && (
+        <RecordatorioFormulario
+          cliente={sugerencia.cliente}
+          inicial={{ tipo: 'alimento', descripcion: sugerencia.producto.nombre, producto: sugerencia.producto.id, enDias: 30 }}
+          alCerrar={() => { setPanel(null); setSugerencia(null); enfocar('buscador-caja'); }}
+        />
+      )}
       {panel === 'gasto' && turnoAbierto && <GastoCaja turnoId={turno.id} alCerrar={() => { setPanel(null); enfocar('buscador-caja'); }} />}
       {panel === 'cliente' && (
         <ClienteContacto

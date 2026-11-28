@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { BookUser, MessageCircle, Plus, Search } from 'lucide-react';
+import { BookUser, MessageCircle, PawPrint, Plus, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { clientesAPI, mensajeDeError } from '../services/api';
+import { clientesAPI, configuracionAPI, mensajeDeError } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import ClienteContacto from '../components/clientes/ClienteContacto';
+import FichaCliente from '../components/clientes/FichaCliente';
+import { enlaceWhatsapp } from '../utils/recordatorios';
 
 const TIPOS = { publico: 'Público', clinica: 'Clínica', veterinaria: 'Veterinaria', petshop: 'Petshop', estetica: 'Estética', empleado: 'Empleado' };
-export const enlaceWhatsapp = (numero, texto = '') => `https://wa.me/52${numero}${texto ? `?text=${encodeURIComponent(texto)}` : ''}`;
 
 // Directorio de clientes: búsqueda por nombre, teléfono, WhatsApp o dirección; alta rápida y datos de contacto.
 export default function Directorio() {
@@ -15,6 +16,12 @@ export default function Directorio() {
   const [q, setQ] = useState('');
   const [lista, setLista] = useState([]);
   const [editando, setEditando] = useState(null); // 'nuevo' | cliente
+  const [ficha, setFicha] = useState(null);
+  const [configLealtad, setConfigLealtad] = useState(null);
+
+  useEffect(() => {
+    configuracionAPI.obtener().then(r => setConfigLealtad(r.data.datos.lealtad)).catch(() => {});
+  }, []);
 
   const cargar = useCallback(async () => {
     try {
@@ -43,10 +50,10 @@ export default function Directorio() {
       <div className="bg-white rounded-xl shadow overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-slate-100 text-left"><tr>
-            <th className="px-3 py-2">Nombre</th><th className="px-3 py-2">Teléfono</th><th className="px-3 py-2">WhatsApp</th><th className="px-3 py-2">Dirección</th><th className="px-3 py-2">Notas</th><th className="px-3 py-2 text-right">Puntos</th>
+            <th className="px-3 py-2">Nombre</th><th className="px-3 py-2">Teléfono</th><th className="px-3 py-2">WhatsApp</th><th className="px-3 py-2">Dirección</th><th className="px-3 py-2">Notas</th><th className="px-3 py-2 text-right">Puntos</th><th className="px-3 py-2" />
           </tr></thead>
           <tbody>
-            {lista.length === 0 && <tr><td colSpan={6} className="px-3 py-4 text-slate-500">{q ? 'Ningún cliente coincide.' : 'Todavía no hay clientes registrados.'}</td></tr>}
+            {lista.length === 0 && <tr><td colSpan={7} className="px-3 py-4 text-slate-500">{q ? 'Ningún cliente coincide.' : 'Todavía no hay clientes registrados.'}</td></tr>}
             {lista.map(c => (
               <tr key={c.id} onClick={() => editable && setEditando(c)} className={`border-t border-slate-100 ${editable ? 'cursor-pointer hover:bg-emerald-50' : ''}`}>
                 <td className="px-3 py-2">{c.nombre}<span className="block text-xs text-slate-500">{TIPOS[c.tipo]}{c.credito?.activo ? ' · con crédito' : ''}</span></td>
@@ -59,11 +66,13 @@ export default function Directorio() {
                 <td className="px-3 py-2">{c.direccion || '—'}</td>
                 <td className="px-3 py-2 text-slate-600">{c.notas || ''}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{c.tipo === 'publico' ? <>{c.lealtad?.puntos || 0}<span className="block text-xs text-slate-500">{c.lealtad?.costales || 0} costales</span></> : '—'}</td>
+                <td className="px-3 py-2 text-right"><button type="button" onClick={e => { e.stopPropagation(); setFicha(c); }} className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-2 py-1 text-xs hover:bg-white"><PawPrint size={14} /> Mascotas</button></td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      {ficha && <FichaCliente cliente={ficha} configLealtad={configLealtad} alCerrar={() => { setFicha(null); cargar(); }} />}
       {editando && <ClienteContacto cliente={editando === 'nuevo' ? null : editando} alCerrar={() => setEditando(null)} alGuardar={() => { setEditando(null); cargar(); }} />}
     </section>
   );

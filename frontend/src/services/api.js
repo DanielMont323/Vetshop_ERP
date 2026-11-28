@@ -140,6 +140,21 @@ export const comprasAPI = {
   sugeridas: params => api.get('/compras/sugeridas', { params })
 };
 
+export const mascotasAPI = {
+  listar: (cliente, todas = false) => api.get('/mascotas', { params: { cliente, ...(todas && { todas: true }) } }),
+  crear: datos => api.post('/mascotas', datos),
+  actualizar: (id, datos) => api.patch(`/mascotas/${id}`, datos)
+};
+
+export const recordatoriosAPI = {
+  listar: params => api.get('/recordatorios', { params }),
+  crear: datos => api.post('/recordatorios', datos),
+  actualizar: (id, datos) => api.patch(`/recordatorios/${id}`, datos),
+  avisado: id => api.post(`/recordatorios/${id}/avisado`),
+  hecho: id => api.post(`/recordatorios/${id}/hecho`),
+  cancelar: id => api.post(`/recordatorios/${id}/cancelar`)
+};
+
 export const promocionesAPI = {
   listar: params => api.get('/promociones', { params }),
   crear: datos => api.post('/promociones', datos),
