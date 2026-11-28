@@ -3,6 +3,7 @@
 //   - Estado de cuenta de un cliente, abonos y su comprobante: cobranza:ver o cobranza:registrar_abono (cajero).
 //   - Cancelar un abono: PIN del dueño.
 const express = require('express');
+const abonosDistribucion = require('../services/abonosDistribucion');
 const { body, param, query } = require('express-validator');
 const { validar } = require('../middleware/validar');
 const { requirePermiso } = require('../middleware/permisos');
@@ -67,7 +68,9 @@ router.post(
   ]),
   async (req, res) => {
     const { abono, repetido } = await credito.registrarAbono(req.alcance, req.user, req.datos);
-    res.status(repetido ? 200 : 201).json({ ok: true, repetido, datos: abono });
+    // Complemento de pago de las facturas PPD que cubrió (si el PAC falla, el abono ya quedó y se puede reintentar)
+    if (!repetido) await abonosDistribucion.emitirComplementos(req.user, abono.id);
+    res.status(repetido ? 200 : 201).json({ ok: true, repetido, datos: abono, detalle: await abonosDistribucion.detalle(abono.id) });
   }
 );
 
@@ -82,6 +85,17 @@ router.get(
     res.type('html').send(htmlAbono(abono, { sucursal: sucursal?.nombre || '', saldo: ec.resumen.saldo, ancho: req.datos.ancho || 80 }));
   }
 );
+
+// Ventas y facturas que cubrió un abono, complementos y saldo (para el mensaje de WhatsApp)
+router.get('/abonos/:id/detalle', puedeVerCuentas, validar([param('id').isMongoId()]), async (req, res) => {
+  res.json({ ok: true, datos: await abonosDistribucion.detalle(req.datos.id) });
+});
+
+// Reintentar los complementos de pago que fallaron
+router.post('/abonos/:id/complementos', requirePermiso('facturacion:emitir'), validar([param('id').isMongoId()]), async (req, res) => {
+  await abonosDistribucion.emitirComplementos(req.user, req.datos.id);
+  res.json({ ok: true, datos: await abonosDistribucion.detalle(req.datos.id) });
+});
 
 router.post(
   '/abonos/:id/cancelar',

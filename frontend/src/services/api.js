@@ -181,6 +181,7 @@ export const ventasAPI = {
   obtener: id => api.get(`/ventas/${id}`),
   cancelar: (id, datos) => api.post(`/ventas/${id}/cancelar`, datos),
   ticket: (id, ancho = 80) => api.get(`/ventas/${id}/ticket`, { params: { ancho }, responseType: 'text' }),
+  nota: id => api.get(`/ventas/${id}/nota`, { responseType: 'text' }),
   cotizar: datos => api.post('/ventas/cotizar', datos),
   listarEspera: () => api.get('/ventas/espera'),
   guardarEspera: datos => api.post('/ventas/espera', datos),
@@ -230,7 +231,9 @@ export const cobranzaAPI = {
   impresion: (clienteId, params) => api.get(`/cobranza/clientes/${clienteId}/impresion`, { params, responseType: 'text' }),
   abonar: datos => api.post('/cobranza/abonos', datos),
   cancelarAbono: (id, datos) => api.post(`/cobranza/abonos/${id}/cancelar`, datos),
-  comprobante: (id, ancho = 80) => api.get(`/cobranza/abonos/${id}/comprobante`, { params: { ancho }, responseType: 'text' })
+  comprobante: (id, ancho = 80) => api.get(`/cobranza/abonos/${id}/comprobante`, { params: { ancho }, responseType: 'text' }),
+  detalleAbono: id => api.get(`/cobranza/abonos/${id}/detalle`),
+  reintentarComplementos: id => api.post(`/cobranza/abonos/${id}/complementos`)
 };
 
 export const cuentasPagarAPI = {

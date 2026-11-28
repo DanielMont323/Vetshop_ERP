@@ -9,6 +9,9 @@ const ventas = require('../services/ventas');
 const Sucursal = require('../models/Sucursal');
 const { METODOS_PAGO } = require('../models/Venta');
 const { htmlTicket } = require('../helpers/ticket');
+const { htmlNotaVenta } = require('../helpers/notaVenta');
+const Cliente = require('../models/Cliente');
+const CargoCliente = require('../models/CargoCliente');
 
 const router = express.Router();
 const id = param('id').isMongoId().withMessage('Id de venta inválido');
@@ -131,6 +134,18 @@ router.get('/:id/ticket', puedeConsultar, validar([id, query('ancho').optional()
   // Dirección pública de la autofactura (FRONTEND_URL o el primer origen permitido)
   const frontend = process.env.FRONTEND_URL || (process.env.CORS_ORIGINS || '').split(',')[0].trim();
   res.type('html').send(htmlTicket(venta, { sucursal: sucursal?.nombre || '', ancho: req.datos.ancho || 80, urlAutofactura: frontend ? `${frontend.replace(/\/$/, '')}/autofactura` : null }));
+});
+
+// GET /api/ventas/:id/nota → nota de venta (remisión) en hoja carta, con los datos del cliente
+router.get('/:id/nota', puedeConsultar, validar([id]), async (req, res) => {
+  const venta = await ventas.obtener(req.alcance, req.user, req.datos.id, { ...vision(req), verCostos: false });
+  const [sucursal, cliente, cargo] = await Promise.all([
+    Sucursal.findById(venta.sucursal).lean(),
+    Cliente.findById(venta.cliente.id).lean(),
+    CargoCliente.findOne({ venta: venta.id }, { vencimiento: 1 }).lean()
+  ]);
+  res.set('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'");
+  res.type('html').send(htmlNotaVenta(venta, cliente || { nombre: venta.cliente.nombre }, { sucursal: sucursal?.nombre || '', vencimiento: cargo?.vencimiento || null }));
 });
 
 // POST /api/ventas/:id/forma-pago { pagos, motivo, autorizacion } — PIN del dueño; turno de la venta abierto

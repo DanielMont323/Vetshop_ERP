@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Printer, X } from 'lucide-react';
+import { FileText, Printer, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { mensajeDeError, ventasAPI } from '../services/api';
 import { formatearDinero, formatearFecha, hoyLocal } from '../utils/formato';
-import { imprimirTicket } from '../utils/caja';
+import { imprimirNota, imprimirTicket } from '../utils/caja';
 import CorregirFormaPago from '../components/caja/CorregirFormaPago';
 
 const METODOS = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', credito: 'A crédito', puntos: 'Puntos' };
@@ -80,6 +80,7 @@ export default function VentasDia() {
                 <td className="px-3 py-2">{v.estado === 'cancelada' ? <span className="rounded px-2 py-0.5 text-xs bg-red-100 text-red-800">Cancelada</span> : 'Cobrada'}</td>
                 <td className="px-3 py-2 flex gap-2 justify-end">
                   <button type="button" onClick={() => imprimirTicket(v.id).catch(e => toast.error(mensajeDeError(e, 'No se pudo imprimir')))} aria-label={`Reimprimir ticket ${v.folio}`} className="text-slate-500 hover:text-slate-800"><Printer size={16} /></button>
+                  <button type="button" onClick={() => imprimirNota(v.id).catch(e => toast.error(mensajeDeError(e, 'No se pudo imprimir')))} aria-label={`Nota de venta ${v.folio}`} title="Nota de venta (hoja carta)" className="text-slate-500 hover:text-slate-800"><FileText size={16} /></button>
                   {v.estado === 'cobrada' && puede('ventas:cobrar') && (
                     <>
                       <button type="button" onClick={() => abrirCorreccion(v.id)} className="text-xs text-slate-700 underline">Forma de pago</button>
