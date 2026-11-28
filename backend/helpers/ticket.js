@@ -10,6 +10,20 @@ const escapar = texto =>
 const METODOS = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia', credito: 'A crédito', puntos: 'Puntos' };
 const NEGOCIO = 'Huellitas Vetshop';
 
+// Encabezado del ticket: logo, nombre, lema, RFC, dirección y teléfono de la marca (services/marcas)
+function encabezado(marca = {}, sucursal = '') {
+  const lineas = String(marca.direccion || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  return [
+    marca.logo ? `<div class="centro"><img src="${escapar(marca.logo)}" alt="" style="max-width:55%;max-height:28mm"></div>` : '',
+    `<h1>${escapar(marca.nombre || NEGOCIO)}</h1>`,
+    marca.lema ? `<div class="centro">${escapar(marca.lema)}</div>` : '',
+    marca.rfc ? `<div class="centro">RFC: ${escapar(marca.rfc)}</div>` : '',
+    ...lineas.map(l => `<div class="centro">${escapar(l)}</div>`),
+    marca.telefono ? `<div class="centro">Tel. ${escapar(marca.telefono)}</div>` : '',
+    sucursal ? `<div class="centro">Sucursal ${escapar(sucursal)}</div>` : ''
+  ].filter(Boolean).join('\n  ');
+}
+
 function cantidadTexto(p) {
   return p.unidad === 'kg' ? `${baseATexto(p.cantidad, 'kg')} kg` : `${p.cantidad}`;
 }
@@ -18,7 +32,7 @@ function cantidadTexto(p) {
  * @param {object} venta  venta pública (services/ventas)
  * @param {object} opciones { sucursal: nombre, ancho: 58 | 80 }
  */
-function htmlTicket(venta, { sucursal, ancho = 80, urlAutofactura } = {}) {
+function htmlTicket(venta, { sucursal, ancho = 80, urlAutofactura, marca } = {}) {
   const mm = ancho === 58 ? 58 : 80;
   const filas = venta.partidas
     .map(p => {
@@ -46,8 +60,7 @@ function htmlTicket(venta, { sucursal, ancho = 80, urlAutofactura } = {}) {
   hr { border: 0; border-top: 1px dashed #000; margin: 4px 0; }
 </style></head>
 <body>
-  <h1>${NEGOCIO}</h1>
-  <div class="centro">${escapar(sucursal)}</div>
+  ${encabezado(marca, sucursal)}
   <hr>
   <div class="f"><span>Folio</span><span>${escapar(venta.serie)}-${venta.folio}</span></div>
   <div class="f"><span>Fecha</span><span>${formatearLocal(venta.fecha, 'dd/MM/yyyy HH:mm')}</span></div>
@@ -72,7 +85,7 @@ function htmlTicket(venta, { sucursal, ancho = 80, urlAutofactura } = {}) {
 }
 
 // Comprobante de abono de un cliente (misma impresora térmica)
-function htmlAbono(abono, { sucursal, saldo, ancho = 80 } = {}) {
+function htmlAbono(abono, { sucursal, saldo, ancho = 80, marca } = {}) {
   const mm = ancho === 58 ? 58 : 80;
   const filas = abono.aplicaciones
     .map(a => `<div class="f"><span>${escapar(a.folio)}</span><span>${formatear(a.monto)}</span></div>${a.bonificacion > 0 ? `<div class="d">Bonificación pronto pago −${formatear(a.bonificacion)}</div>` : ''}`)
@@ -88,8 +101,7 @@ function htmlAbono(abono, { sucursal, saldo, ancho = 80 } = {}) {
   hr { border: 0; border-top: 1px dashed #000; margin: 4px 0; }
 </style></head>
 <body>
-  <h1>${NEGOCIO}</h1>
-  <div class="centro">${escapar(sucursal)}</div>
+  ${encabezado(marca, sucursal)}
   <div class="centro">Comprobante de abono</div>
   <hr>
   <div class="f"><span>Folio</span><span>${escapar(abono.serie)}-${abono.folio}</span></div>
@@ -109,4 +121,4 @@ function htmlAbono(abono, { sucursal, saldo, ancho = 80 } = {}) {
 </body></html>`;
 }
 
-module.exports = { htmlTicket, htmlAbono, escapar };
+module.exports = { htmlTicket, htmlAbono, escapar, encabezado };

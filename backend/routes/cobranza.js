@@ -3,6 +3,7 @@
 //   - Estado de cuenta de un cliente, abonos y su comprobante: cobranza:ver o cobranza:registrar_abono (cajero).
 //   - Cancelar un abono: PIN del dueño.
 const express = require('express');
+const Cliente = require('../models/Cliente');
 const abonosDistribucion = require('../services/abonosDistribucion');
 const { body, param, query } = require('express-validator');
 const { validar } = require('../middleware/validar');
@@ -26,7 +27,7 @@ function puedeVerCuentas(req, res, next) {
   if (['cobranza:ver', 'cobranza:registrar_abono'].some(p => tienePermiso(req.user.rol, p))) return next();
   return next(sinPermiso('No tienes permiso para ver cuentas de clientes'));
 }
-const CSP_IMPRESION = "default-src 'none'; style-src 'unsafe-inline'";
+const CSP_IMPRESION = "default-src 'none'; style-src 'unsafe-inline'; img-src data:";
 
 router.get('/cartera', requirePermiso('cobranza:ver'), validar([query('q').optional().isString().trim().isLength({ max: 100 })]), async (req, res) => {
   res.json({ ok: true, ...(await credito.cartera(req.datos)) });
@@ -80,9 +81,10 @@ router.get(
   validar([param('id').isMongoId(), query('ancho').optional().isIn(['58', '80']).toInt()]),
   async (req, res) => {
     const abono = await credito.obtenerAbono(req.datos.id);
-    const [sucursal, ec] = await Promise.all([Sucursal.findById(abono.sucursal).lean(), credito.estadoCuenta(abono.cliente.id)]);
+    const [sucursal, ec, cliente] = await Promise.all([Sucursal.findById(abono.sucursal).lean(), credito.estadoCuenta(abono.cliente.id), Cliente.findById(abono.cliente.id).lean()]);
+    const marca = await require('../services/marcas').paraCliente(cliente);
     res.set('Content-Security-Policy', CSP_IMPRESION);
-    res.type('html').send(htmlAbono(abono, { sucursal: sucursal?.nombre || '', saldo: ec.resumen.saldo, ancho: req.datos.ancho || 80 }));
+    res.type('html').send(htmlAbono(abono, { sucursal: sucursal?.nombre || '', saldo: ec.resumen.saldo, ancho: req.datos.ancho || 80, marca }));
   }
 );
 
