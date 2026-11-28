@@ -12,6 +12,7 @@ const { importePartida, aplicarTasa, sumar } = require('../helpers/dinero');
 const { deHoraLocal, diaLocal, rangoDias } = require('../helpers/fechas');
 const inventario = require('./inventario');
 const auditoria = require('./auditoria');
+const pedidos = require('./pedidos');
 const cuentasPorPagar = require('./cuentasPorPagar');
 
 const TEMPERATURA_MIN = 2;
@@ -76,7 +77,8 @@ async function armar(datos, session) {
     subtotal,
     iva,
     total: subtotal + iva,
-    observaciones: datos.observaciones
+    observaciones: datos.observaciones,
+    pedido: datos.pedido || null
   };
 }
 
@@ -84,6 +86,7 @@ const publica = c => ({
   id: c._id,
   sucursal: c.sucursal,
   proveedor: { id: c.proveedor, nombre: c.proveedorNombre },
+  pedido: c.pedido || null,
   folioFactura: c.folioFactura,
   fechaFactura: c.fechaFactura,
   condicionPago: c.condicionPago,
@@ -105,7 +108,9 @@ const filtroEscritura = (alcance, filtro) => conAlcance(filtro, { ...alcance, su
 async function crear(alcance, actor, datos) {
   const sucursal = sucursalDeEscritura(alcance);
   return conTransaccion(async session => {
-    const [compra] = await Compra.create([{ ...(await armar(datos, session)), sucursal, usuario: actor._id }], { session });
+    const armada = await armar(datos, session);
+    if (armada.pedido) await pedidos.validarParaCompra(sucursal, armada.pedido, armada.proveedor, session);
+    const [compra] = await Compra.create([{ ...armada, sucursal, usuario: actor._id }], { session });
     return publica(compra);
   });
 }
@@ -115,7 +120,9 @@ async function actualizar(alcance, actor, id, datos) {
     const compra = await Compra.findOne(filtroEscritura(alcance, { _id: aId(id) })).session(session);
     if (!compra) throw noEncontrado('Compra no encontrada');
     if (compra.estado !== 'borrador') throw conflicto(`La compra ya está ${compra.estado}; no se puede modificar`, 'COMPRA_NO_EDITABLE');
-    compra.set(await armar(datos, session));
+    const armada = await armar(datos, session);
+    if (armada.pedido) await pedidos.validarParaCompra(compra.sucursal, armada.pedido, armada.proveedor, session);
+    compra.set(armada);
     await compra.save({ session });
     return publica(compra);
   });
@@ -183,6 +190,8 @@ async function confirmar(alcance, actor, id) {
     await Compra.updateOne({ _id: compra._id, sucursal: compra.sucursal }, { $set: capas }, { session });
     // Cuenta por pagar de la factura (las de contado quedan ya pagadas)
     await cuentasPorPagar.registrarCompra(compra, session);
+    // Recibida contra un pedido: se suma a lo surtido del pedido
+    if (compra.pedido) await pedidos.aplicarRecepcion(compra, session);
 
     await auditoria.registrar(
       {

@@ -51,11 +51,13 @@ async function existenciaPorProducto(sucursales, limiteUtil, ahora) {
 }
 
 async function enCamino(sucursal) {
-  const [traspasos, borradores] = await Promise.all([
+  const [traspasos, borradores, pedidosPendientes] = await Promise.all([
     Traspaso.find({ destino: sucursal, estado: 'en_transito' }).select('partidas.producto partidas.cantidad').lean(),
-    Compra.find({ sucursal, estado: 'borrador' }).select('partidas.producto partidas.cantidad').lean()
+    // Los borradores de compra contra un pedido ya cuentan en lo pendiente del pedido
+    Compra.find({ sucursal, estado: 'borrador', pedido: null }).select('partidas.producto partidas.cantidad').lean(),
+    require('./pedidos').pendientesPorProducto(sucursal)
   ]);
-  const r = new Map();
+  const r = new Map(pedidosPendientes);
   for (const doc of [...traspasos, ...borradores]) {
     for (const p of doc.partidas) r.set(String(p.producto), (r.get(String(p.producto)) || 0) + p.cantidad);
   }

@@ -41,6 +41,8 @@ const compraSchema = new mongoose.Schema(
     sucursal: { type: mongoose.Schema.Types.ObjectId, ref: 'Sucursal', required: true },
     proveedor: { type: mongoose.Schema.Types.ObjectId, ref: 'Proveedor', required: true },
     proveedorNombre: { type: String, required: true },
+    // Pedido contra el que se recibe (opcional): al confirmar, suma lo recibido al pedido
+    pedido: { type: mongoose.Schema.Types.ObjectId, ref: 'PedidoProveedor', default: null },
     folioFactura: { type: String, required: [true, 'El folio de la factura es obligatorio'], trim: true, uppercase: true, maxlength: 40 },
     fechaFactura: { type: Date, required: true },
     condicionPago: { type: String, enum: ['contado', 'credito'], required: true },
