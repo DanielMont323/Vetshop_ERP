@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { clientesAPI, configuracionAPI, mensajeDeError, metasAPI, productosAPI, turnosAPI, ventasAPI } from '../services/api';
 import { baseATexto, cantidadABase, formatearDinero } from '../utils/formato';
-import { descuentoDe, imprimirNota, imprimirTicket, importeBruto, nuevaClaveOperacion, porcentajeAPuntosBase, precioPara } from '../utils/caja';
+import { descuentoDe, imprimirNota, imprimirTicket, puntosPorCompra, importeBruto, nuevaClaveOperacion, porcentajeAPuntosBase, precioPara } from '../utils/caja';
 import BuscadorProducto from '../components/BuscadorProducto';
 import Carrito from '../components/caja/Carrito';
 import PanelCobro from '../components/caja/PanelCobro';
@@ -286,6 +286,7 @@ export default function Caja() {
           )}
           <div className="flex justify-between items-baseline"><span className="text-lg">Total</span><span className="text-3xl font-bold tabular-nums">{formatearDinero(total)}</span></div>
           <p className="text-xs text-slate-500">Precios con IVA incluido.{esperaId && ' Venta recuperada de espera.'}</p>
+          {participaEnLealtad(cliente, configLealtad) && total > 0 && <p className="text-sm text-amber-800">⭐ Con esta compra gana <strong>{puntosPorCompra(total, configLealtad)}</strong> puntos</p>}
           <button type="button" disabled={!listo || !sucursalActiva} onClick={() => setPanel('cobro')} className="w-full rounded-lg bg-emerald-600 text-white text-lg font-semibold py-3 hover:bg-emerald-700 disabled:opacity-50">Cobrar (F12)</button>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={imprimir} onChange={e => setImprimir(e.target.checked)} /> Imprimir ticket al cobrar</label>
         </div>
@@ -318,7 +319,7 @@ export default function Caja() {
       </aside>
 
       {panel === 'cobro' && (
-        <PanelCobro total={total} cliente={cliente} pideAutorizacion={pidePinDescuento} lealtad={participaEnLealtad(cliente, configLealtad) ? { puntos: cliente.lealtad?.puntos || 0, valorPunto: configLealtad.valorPunto } : null} creditoPendiente={creditoPendiente} cobrando={cobrando} alCobrar={cobrar} alCerrar={() => { setPanel(null); setCreditoPendiente(null); enfocar('buscador-caja'); }} />
+        <PanelCobro total={total} cliente={cliente} pideAutorizacion={pidePinDescuento} lealtad={participaEnLealtad(cliente, configLealtad) ? { puntos: cliente.lealtad?.puntos || 0, valorPunto: configLealtad.valorPunto, config: configLealtad } : null} creditoPendiente={creditoPendiente} cobrando={cobrando} alCobrar={cobrar} alCerrar={() => { setPanel(null); setCreditoPendiente(null); enfocar('buscador-caja'); }} />
       )}
       {panel === 'espera' && <VentasEspera alRecuperar={recuperar} alCerrar={() => setPanel(null)} />}
       {panel === 'recordatorio' && sugerencia && (

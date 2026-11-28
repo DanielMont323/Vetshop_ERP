@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { centavosATexto, formatearDinero, pesosACentavos } from '../../utils/formato';
+import { puntosPorCompra } from '../../utils/caja';
 
 const campo = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-right text-lg tabular-nums focus:outline-none focus:ring-2 focus:ring-emerald-500';
 
@@ -110,6 +111,9 @@ export default function PanelCobro({ total, cliente, pideAutorizacion, creditoPe
 
         {lealtad && disponiblePuntos > 0 && (
           <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">{cliente.nombre} tiene {lealtad.puntos} puntos = {formatearDinero(disponiblePuntos)} para pagar</p>
+        )}
+        {lealtad?.config && (
+          <p className="text-sm text-amber-800">⭐ Con esta compra gana <strong>{puntosPorCompra(total - (Number.isNaN(montos.puntos) ? 0 : montos.puntos), lealtad.config)}</strong> puntos{montos.puntos > 0 ? ' (lo pagado con puntos no suma)' : ''}</p>
         )}
         <fieldset disabled={cobrando} className="space-y-3">
           {filas.map(([texto, valor, setValor, ref, setRef, refInput]) => (
