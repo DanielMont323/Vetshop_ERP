@@ -224,6 +224,16 @@ export const traspasosAPI = {
   cancelar: (id, motivo) => api.post(`/traspasos/${id}/cancelar`, { motivo })
 };
 
+export const pedidosAPI = {
+  listar: params => api.get('/pedidos', { params }),
+  obtener: id => api.get(`/pedidos/${id}`),
+  crear: datos => api.post('/pedidos', datos),
+  actualizar: (id, datos) => api.put(`/pedidos/${id}`, datos),
+  enviar: id => api.post(`/pedidos/${id}/enviar`),
+  cancelar: (id, motivo) => api.post(`/pedidos/${id}/cancelar`, { motivo }),
+  documento: id => api.get(`/pedidos/${id}/documento`, { responseType: 'text' })
+};
+
 export const cobranzaAPI = {
   cartera: params => api.get('/cobranza/cartera', { params }),
   carteraExcel: () => api.get('/cobranza/cartera/excel', { responseType: 'blob', timeout: 60000 }),

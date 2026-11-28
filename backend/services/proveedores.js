@@ -5,7 +5,7 @@ const { noEncontrado } = require('../helpers/errores');
 const { normalizar } = require('../helpers/texto');
 const auditoria = require('./auditoria');
 
-const CAMPOS = ['nombre', 'rfc', 'contacto', 'telefono', 'email', 'diasCredito', 'activo'];
+const CAMPOS = ['nombre', 'rfc', 'contacto', 'telefono', 'whatsapp', 'email', 'diasCredito', 'activo'];
 
 const publico = p => ({
   id: p._id,
@@ -13,6 +13,7 @@ const publico = p => ({
   rfc: p.rfc || null,
   contacto: p.contacto || '',
   telefono: p.telefono || '',
+  whatsapp: p.whatsapp || '',
   email: p.email || '',
   diasCredito: p.diasCredito,
   activo: p.activo

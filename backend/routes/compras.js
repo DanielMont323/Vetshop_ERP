@@ -23,6 +23,7 @@ const reglasCompra = [
   body('condicionPago').isIn(['contado', 'credito']).withMessage('Condición de pago: contado o credito'),
   body('diasCredito').optional().custom(entero(0, 365)).withMessage('Días de crédito: entero de 0 a 365'),
   body('observaciones').optional().isString().trim().isLength({ max: 500 }),
+  body('pedido').optional({ values: 'falsy' }).isMongoId().withMessage('Pedido inválido'),
   body('partidas').isArray({ min: 1, max: 200 }).withMessage('La compra debe tener entre 1 y 200 partidas'),
   body('partidas.*.producto').isMongoId().withMessage('Producto inválido en una partida'),
   body('partidas.*.cantidad').custom(entero(1)).withMessage('Cantidad: entero > 0 (piezas o gramos)'),

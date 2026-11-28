@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { mensajeDeError, proveedoresAPI } from '../services/api';
 
 const campo = 'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500';
-const vacio = { nombre: '', rfc: '', contacto: '', telefono: '', email: '', diasCredito: '0', activo: true };
+const vacio = { nombre: '', rfc: '', contacto: '', telefono: '', whatsapp: '', email: '', diasCredito: '0', activo: true };
 
 export default function Proveedores() {
   const [q, setQ] = useState('');
@@ -36,7 +36,7 @@ export default function Proveedores() {
     e.preventDefault();
     const dias = Number(f.diasCredito);
     if (!Number.isInteger(dias) || dias < 0) return toast.error('Días de crédito: número entero');
-    const cuerpo = { nombre: f.nombre.trim(), rfc: f.rfc.trim(), contacto: f.contacto.trim(), telefono: f.telefono.trim(), email: f.email.trim(), diasCredito: dias, activo: f.activo };
+    const cuerpo = { nombre: f.nombre.trim(), rfc: f.rfc.trim(), contacto: f.contacto.trim(), telefono: f.telefono.trim(), whatsapp: f.whatsapp, email: f.email.trim(), diasCredito: dias, activo: f.activo };
     setGuardando(true);
     try {
       if (editando === 'nuevo') await proveedoresAPI.crear(cuerpo);
@@ -76,6 +76,8 @@ export default function Proveedores() {
               <input className={campo} value={f.contacto} onChange={e => setF({ ...f, contacto: e.target.value })} maxLength={80} /></label>
             <label className="block"><span className="text-sm font-medium">Teléfono</span>
               <input className={campo} value={f.telefono} onChange={e => setF({ ...f, telefono: e.target.value })} maxLength={20} /></label>
+            <label className="block text-sm"><span className="font-medium">WhatsApp (10 dígitos, para pedidos)</span>
+              <input className={campo} inputMode="numeric" value={f.whatsapp} onChange={e => setF({ ...f, whatsapp: e.target.value.replace(/\D/g, '').slice(0, 10) })} /></label>
             <label className="block"><span className="text-sm font-medium">Correo</span>
               <input type="email" className={campo} value={f.email} onChange={e => setF({ ...f, email: e.target.value })} /></label>
             <label className="block"><span className="text-sm font-medium">Días de crédito</span>

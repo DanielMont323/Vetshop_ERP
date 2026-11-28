@@ -6,6 +6,7 @@ import { comprasAPI, mensajeDeError } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { NOMBRES_CATEGORIA, baseATexto, cantidadABase, formatearCantidad, formatearDinero } from '../utils/formato';
 import CompraFormulario from '../components/CompraFormulario';
+import PedidoFormulario from '../components/compras/PedidoFormulario';
 
 const dividir = (n, d) => Math.floor(n / d) + ((n % d) * 2 >= d ? 1 : 0);
 const importe = (costo, cantidad, unidad) => (costo === null || !cantidad ? 0 : unidad === 'kg' ? dividir(costo * cantidad, 1000) : costo * cantidad);
@@ -18,6 +19,7 @@ export default function ComprasSugeridas() {
   const [datos, setDatos] = useState(null);
   const [cantidades, setCantidades] = useState({});
   const [borrador, setBorrador] = useState(null);
+  const [pedido, setPedido] = useState(null);
 
   const cargar = useCallback(async () => {
     if (!sucursalActiva) return;
@@ -59,6 +61,15 @@ export default function ComprasSugeridas() {
       estado: 'borrador', proveedor: { id: grupo.proveedor?.id || '' }, folioFactura: '', fechaFactura: new Date().toISOString(), condicionPago: 'contado', diasCredito: 0,
       observaciones: 'Desde compras sugeridas', partidas
     });
+  };
+
+  const crearPedido = grupo => {
+    const partidas = grupo.filas
+      .map(f => ({ f, cantidad: cantidadDe(f) }))
+      .filter(({ cantidad }) => cantidad && !Number.isNaN(cantidad))
+      .map(({ f, cantidad }) => ({ producto: f.producto.id, sku: f.producto.sku, nombre: f.producto.nombre, unidad: f.producto.unidad, cantidad, costoEstimado: f.ultimoCosto ?? undefined }));
+    if (!partidas.length) return toast.error('Indica al menos una cantidad a pedir');
+    setPedido({ proveedor: { id: grupo.proveedor?.id || '' }, origen: 'sugeridas', partidas });
   };
 
   const cambiar = (k, v) => setParametros(p => ({ ...p, [k]: v }));
@@ -110,7 +121,8 @@ export default function ComprasSugeridas() {
             <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-slate-100">
               <h3 className="font-semibold mr-auto">{g.proveedor ? g.proveedor.nombre : 'Sin proveedor habitual (nunca se ha recibido)'}</h3>
               <span className="text-sm tabular-nums">Estimado: {formatearDinero(total)}</span>
-              <button type="button" onClick={() => crearBorrador(g)} className="rounded-lg bg-emerald-600 text-white px-3 py-1.5 text-sm hover:bg-emerald-700">Crear borrador de compra</button>
+              <button type="button" onClick={() => crearPedido(g)} className="rounded-lg bg-emerald-600 text-white px-3 py-1.5 text-sm hover:bg-emerald-700">Crear pedido</button>
+              <button type="button" onClick={() => crearBorrador(g)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">Recibir sin pedido</button>
             </div>
             <table className="w-full text-sm">
               <thead className="bg-slate-50 text-left"><tr>
@@ -153,6 +165,7 @@ export default function ComprasSugeridas() {
         );
       })}
 
+      {pedido && <PedidoFormulario pedido={pedido} alCerrar={() => setPedido(null)} alGuardar={p => { setPedido(null); toast.success(`Pedido ${p.folio} guardado en Pedidos`); cargar(); }} />}
       {borrador && <CompraFormulario compra={borrador} alCerrar={() => setBorrador(null)} alGuardar={() => { setBorrador(null); toast.success('Borrador guardado en Recepción'); cargar(); }} />}
     </section>
   );

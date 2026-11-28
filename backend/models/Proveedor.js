@@ -11,6 +11,8 @@ const proveedorSchema = new mongoose.Schema(
     contacto: { type: String, trim: true, maxlength: 80 },
     telefono: { type: String, trim: true, maxlength: 20 },
     email: { type: String, trim: true, lowercase: true, maxlength: 120 },
+    // WhatsApp a 10 dígitos: para mandarle los pedidos
+    whatsapp: { type: String, trim: true, match: [/^\d{10}$/, 'WhatsApp: 10 dígitos'] },
     diasCredito: {
       type: Number,
       default: 0,
@@ -28,6 +30,7 @@ proveedorSchema.index({ rfc: 1 }, { unique: true, partialFilterExpression: { rfc
 
 proveedorSchema.pre('validate', function () {
   if (this.rfc === '') this.rfc = undefined;
+  if (this.whatsapp === '') this.whatsapp = undefined;
 });
 
 module.exports = mongoose.model('Proveedor', proveedorSchema, 'proveedores');

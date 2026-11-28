@@ -18,6 +18,7 @@ function reglas(opcional) {
     body('rfc').optional().isString().trim().toUpperCase().custom(v => v === '' || RE_RFC.test(v)).withMessage('RFC inválido'),
     body('contacto').optional().isString().trim().isLength({ max: 80 }),
     body('telefono').optional().isString().trim().isLength({ max: 20 }),
+    body('whatsapp').optional().isString().trim().custom(v => v === '' || /^\d{10}$/.test(v)).withMessage('WhatsApp: 10 dígitos'),
     body('email').optional({ values: 'falsy' }).isEmail().withMessage('Correo inválido').normalizeEmail({ gmail_remove_dots: false }),
     body('diasCredito').optional().custom(v => Number.isSafeInteger(v) && v >= 0 && v <= 365).withMessage('Días de crédito: entero de 0 a 365'),
     body('activo').optional().isBoolean({ strict: true }).withMessage('activo debe ser true o false')
